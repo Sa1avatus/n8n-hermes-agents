@@ -343,43 +343,107 @@ The exact hostnames, ports, credentials and model names are deployment-specific 
 
 ### Installation
 
-#### 1. Start n8n
+#### 1. Install Git
 
-Start the n8n deployment using your normal Docker Compose setup.
+Install Git for your operating system:
 
-For example:
+https://git-scm.com/downloads
+
+Verify:
+
+```powershell
+git --version
+```
+
+#### 2. Install Docker Desktop
+
+Install Docker Desktop:
+
+https://www.docker.com/products/docker-desktop/
+
+On Windows, start Docker Desktop and make sure the Docker Engine is running.
+
+Verify Docker and Docker Compose:
+
+```powershell
+docker --version
+docker compose version
+```
+
+#### 3. Clone the repository
+
+```powershell
+git clone https://github.com/Sa1avatus/n8n-hermes-agents.git
+cd n8n-hermes-agents
+```
+
+#### 4. Start n8n
+
+After Docker Desktop is running:
 
 ```powershell
 docker compose up -d
 ```
 
-Verify that n8n is available.
+Check the containers:
 
-#### 2. Prepare Hermes
+```powershell
+docker compose ps
+```
+
+View logs if necessary:
+
+```powershell
+docker compose logs -f
+```
+
+Open n8n using the port configured in `docker-compose.yml`.
+
+#### 5. Prepare Hermes Gateway
 
 Make sure Hermes Gateway is running and reachable from the n8n container.
 
-For a Docker Desktop deployment, the workflow can use a host address such as:
+For Docker Desktop, a host service can typically be reached through:
 
 ```text
 http://host.docker.internal:8642
 ```
 
-Use the actual address and port of your deployment.
+Use the actual Hermes address and port for your deployment.
 
-#### 3. Import the Hermes Run Manager
+#### 6. Prepare the LLM backend
+
+Hermes must have access to the model provider used by AHAWR.
+
+Typical topology:
+
+```text
+n8n
+ │
+ ▼
+Hermes Gateway
+ │
+ ├── local llama.cpp
+ │
+ └── external model provider
+```
+
+Models and providers are configured through the `hermes_config` Data Table.
+
+#### 7. Import `Hermes_Run_Manager_v2.json`
 
 In n8n:
 
 1. Import `Hermes_Run_Manager_v2.json`.
-2. Configure the credentials required by your Hermes deployment.
-3. Verify that the sub-workflow executes a simple test request.
+2. Configure the required Hermes credentials.
+3. Run a simple test request.
+4. Confirm that Hermes can start a run and return a result.
 
-Do not copy secrets from example files into production.
+Do not put real credentials into Git-tracked workflow files.
 
-#### 4. Create the Data Tables
+#### 8. Create the Data Tables
 
-Create these n8n Data Tables:
+Create:
 
 ```text
 hermes_config
@@ -387,32 +451,32 @@ agent_prompts
 missions
 ```
 
-Import the corresponding CSV data.
+Import the corresponding CSV files.
 
-At minimum, there should be:
+Verify that:
 
-- an enabled `default` configuration profile;
-- enabled agent prompts;
-- at least one enabled mission.
+- `hermes_config` contains an enabled `default` profile;
+- `agent_prompts` contains enabled prompts;
+- `missions` contains at least one enabled mission.
 
-#### 5. Check mission state namespace
+#### 9. Check `state_namespace`
 
-Every mission used by AHAWR must contain a non-empty:
+Every mission used by AHAWR must have a non-empty:
 
 ```text
 state_namespace
 ```
 
-For example:
+Example:
 
 ```text
-simple-readonly-review
-test
+mission_id: simple-readonly-review
+state_namespace: test
 ```
 
-The namespace is used as the key for mission state persistence.
+The namespace isolates persistent state between missions.
 
-#### 6. Import AHAWR
+#### 10. Import `AHAWR_v11.json`
 
 Import:
 
@@ -420,28 +484,50 @@ Import:
 AHAWR_v11.json
 ```
 
-Make sure the Execute Workflow nodes point to the imported `Hermes_Run_Manager_v2` workflow.
+After importing, verify that the Execute Workflow nodes reference the imported `Hermes_Run_Manager_v2` workflow.
 
-If n8n assigns a different workflow ID after import, update the references accordingly.
+If n8n assigns a different workflow ID after import, update the corresponding references.
 
-#### 7. Configure credentials
+#### 11. Configure credentials
 
 Configure Hermes/API credentials in n8n Credentials or environment variables.
 
-Do not place real credentials into Git-tracked JSON or CSV files.
+Never commit:
 
-#### 8. Run a simple mission first
+```text
+.env
+API keys
+Bearer tokens
+passwords
+real credentials
+```
 
-Start with a small read-only mission before using the system against a real coding repository.
+#### 12. Run the first test mission
 
-A good first mission should:
+Start with a small read-only mission:
 
-- have a very small scope;
-- avoid destructive commands;
-- produce a short result;
-- be easy to verify manually.
+```text
+Read the specified file.
+Do not modify any files.
+Do not execute commands that modify files.
+Return a short summary.
+```
 
-Only after the full Architect → Worker → Reviewer loop works should you move to larger development missions.
+Verify the complete pipeline:
+
+```text
+Mission
+   ↓
+Architect
+   ↓
+Worker
+   ↓
+Reviewer
+   ↓
+Approved
+```
+
+Only after this basic flow works should you use larger development missions.
 
 ### How to use it
 
@@ -878,35 +964,105 @@ logs
 
 ### Установка
 
-#### 1. Запустить n8n
+#### 1. Установить Git
 
-Например:
+Установите Git:
+
+https://git-scm.com/downloads
+
+Проверьте:
+
+```powershell
+git --version
+```
+
+#### 2. Установить Docker Desktop
+
+Установите Docker Desktop:
+
+https://www.docker.com/products/docker-desktop/
+
+В Windows запустите Docker Desktop и убедитесь, что Docker Engine работает.
+
+Проверьте:
+
+```powershell
+docker --version
+docker compose version
+```
+
+#### 3. Клонировать репозиторий
+
+```powershell
+git clone https://github.com/Sa1avatus/n8n-hermes-agents.git
+cd n8n-hermes-agents
+```
+
+#### 4. Запустить n8n
+
+После запуска Docker Desktop:
 
 ```powershell
 docker compose up -d
 ```
 
-#### 2. Запустить Hermes Gateway
+Проверьте контейнеры:
 
-Hermes должен быть доступен из контейнера n8n.
+```powershell
+docker compose ps
+```
 
-Для Docker Desktop возможен адрес:
+Для просмотра логов:
+
+```powershell
+docker compose logs -f
+```
+
+Откройте n8n по порту, указанному в `docker-compose.yml`.
+
+#### 5. Подготовить Hermes Gateway
+
+Hermes должен быть запущен и доступен из контейнера n8n.
+
+Для Docker Desktop сервис на хостовой машине обычно доступен через:
 
 ```text
 http://host.docker.internal:8642
 ```
 
-Используйте фактический адрес вашей установки.
+Используйте фактический адрес и порт вашей установки.
 
-#### 3. Импортировать `Hermes_Run_Manager_v2.json`
+#### 6. Подготовить LLM backend
 
-После импорта:
+Hermes должен иметь доступ к provider, который используется AHAWR.
 
-- настроить credentials;
-- проверить доступ к Hermes;
-- выполнить тестовый запуск.
+Например:
 
-#### 4. Создать Data Tables
+```text
+n8n
+ │
+ ▼
+Hermes Gateway
+ │
+ ├── local llama.cpp
+ │
+ └── external model provider
+```
+
+Модели и provider задаются через таблицу `hermes_config`.
+
+#### 7. Импортировать `Hermes_Run_Manager_v2.json`
+
+В n8n:
+
+1. Импортируйте `Hermes_Run_Manager_v2.json`.
+2. Настройте необходимые Hermes credentials.
+3. Выполните простой тестовый запрос.
+4. Убедитесь, что Hermes запускает run и возвращает результат.
+
+Не помещайте реальные credentials в Git-tracked workflow-файлы.
+
+#### 8. Создать Data Tables
 
 Создайте:
 
@@ -916,17 +1072,17 @@ agent_prompts
 missions
 ```
 
-и импортируйте соответствующие CSV.
+Импортируйте соответствующие CSV.
 
-Должны существовать:
+Проверьте, что:
 
-- enabled `default` configuration;
-- enabled prompts;
-- минимум одна enabled mission.
+- в `hermes_config` есть enabled-профиль `default`;
+- в `agent_prompts` есть enabled prompts;
+- в `missions` есть хотя бы одна enabled mission.
 
-#### 5. Проверить `state_namespace`
+#### 9. Проверить `state_namespace`
 
-У выбранной mission должен присутствовать непустой:
+У каждой mission, которую использует AHAWR, должен быть непустой:
 
 ```text
 state_namespace
@@ -935,10 +1091,13 @@ state_namespace
 Например:
 
 ```text
-test
+mission_id: simple-readonly-review
+state_namespace: test
 ```
 
-#### 6. Импортировать AHAWR
+`state_namespace` разделяет сохранённое состояние разных missions.
+
+#### 10. Импортировать `AHAWR_v11.json`
 
 Импортируйте:
 
@@ -946,13 +1105,27 @@ test
 AHAWR_v11.json
 ```
 
-После импорта проверьте Execute Workflow nodes и убедитесь, что они вызывают именно импортированный `Hermes_Run_Manager_v2`.
+После импорта проверьте Execute Workflow nodes и убедитесь, что они вызывают импортированный `Hermes_Run_Manager_v2`.
 
-### Первый запуск
+Если после импорта n8n назначил другой workflow ID, обновите соответствующие ссылки.
 
-Первую проверку рекомендуется делать на простой read-only mission.
+#### 11. Настроить credentials
 
-Пример:
+Настройте Hermes/API credentials через n8n Credentials или environment variables.
+
+Никогда не коммитьте в Git:
+
+```text
+.env
+API keys
+Bearer tokens
+passwords
+real credentials
+```
+
+#### 12. Выполнить первый тест
+
+Начните с небольшой read-only mission:
 
 ```text
 Прочитать указанный файл.
@@ -961,21 +1134,21 @@ AHAWR_v11.json
 Вернуть краткое резюме.
 ```
 
-Сначала нужно убедиться, что полностью работает цепочка:
+Проверьте полную цепочку:
 
 ```text
 Mission
-  ↓
+   ↓
 Architect
-  ↓
+   ↓
 Worker
-  ↓
+   ↓
 Reviewer
-  ↓
+   ↓
 Approved
 ```
 
-И только после этого использовать систему для реальных coding-задач.
+Только после успешного прохождения этой цепочки используйте большие development missions.
 
 ### Как пользоваться
 
