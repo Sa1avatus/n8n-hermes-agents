@@ -1,0 +1,4376 @@
+{
+  "name": "AHAWR v.10 — compact session-safe",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -14928,
+        1792
+      ],
+      "id": "225ebe5b-01db-4e11-a49e-6ea59e2138d7",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "missions",
+          "mode": "name"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "mission_id",
+              "condition": "eq",
+              "keyValue": "simple-readonly-review"
+            }
+          ]
+        },
+        "returnAll": false,
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -14880,
+        1792
+      ],
+      "id": "ae9a29b0-a105-4324-9fb9-02dd7b3ec042",
+      "name": "Get Mission",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const row = $json ?? {};\n\nconst missionId = String(row.mission_id ?? '').trim();\nif (!missionId) {\n  throw new Error('Mission not found: Data Table returned no mission_id.');\n}\n\nconst enabled = row.enabled === true || String(row.enabled ?? '').toLowerCase() === 'true';\nif (!enabled) {\n  throw new Error(`Mission '${missionId}' is disabled.`);\n}\n\nfunction parseJsonArray(value, fieldName) {\n  if (Array.isArray(value)) return value;\n  const text = String(value ?? '').trim();\n  if (!text) return [];\n  try {\n    const parsed = JSON.parse(text);\n    if (!Array.isArray(parsed)) throw new Error(`${fieldName} must be a JSON array.`);\n    return parsed.map(String);\n  } catch (error) {\n    throw new Error(`Invalid ${fieldName} for mission '${missionId}': ${error.message}`);\n  }\n}\n\nconst objective = String(row.objective ?? '').trim();\nif (!objective) {\n  throw new Error(`Mission '${missionId}' has empty objective.`);\n}\n\nconst rules = parseJsonArray(row.rules_json, 'rules_json');\nconst acceptance = parseJsonArray(row.acceptance_criteria_json, 'acceptance_criteria_json');\n\nconst originalGoal = [\n  `MISSION: ${String(row.name ?? missionId).trim()}`,\n  '',\n  'OBJECTIVE:',\n  objective,\n  '',\n  'RULES:',\n  rules.length ? rules.map((x, i) => `${i + 1}. ${x}`).join('\\\\n') : '(none)',\n  '',\n  'ACCEPTANCE CRITERIA:',\n  acceptance.length ? acceptance.map((x, i) => `${i + 1}. ${x}`).join('\\\\n') : '(none)'\n].join('\\\\n');\n\nreturn [{ json: {\n  mission_id: missionId,\n  mission_version: Number(row.version ?? 1),\n  mission_name: String(row.name ?? missionId),\n  mission_enabled: enabled,\n  objective,\n  rules,\n  acceptance_criteria: acceptance,\n  original_goal: originalGoal\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -14656,
+        1792
+      ],
+      "id": "77eda471-ca87-4230-81cc-cfe621a6c7c6",
+      "name": "Mission"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "k6G9hlUpTK5eCBAK",
+          "mode": "list",
+          "cachedResultName": "Hermes Run Manager v2"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "role": "architect",
+            "run_id": "",
+            "session_id": "",
+            "input": "={{ $('Prompt Templates').first().json.architect_prompt + '\\n\\nBEGIN MISSION\\n' + $('Mission').first().json.original_goal + '\\nEND MISSION' }}",
+            "resume_input": "",
+            "model": "={{ $('Constants').first().json.planner_model }}",
+            "provider": "={{ $('Constants').first().json.planner_provider }}",
+            "poll_seconds": "={{ $('Constants').first().json.architect_poll_seconds }}",
+            "max_polls": "={{ $('Constants').first().json.architect_max_polls }}",
+            "max_retries": "={{ $('Constants').first().json.architect_max_provider_retries }}",
+            "retry_delays": "={{ $('Constants').first().json.retry_delays }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "role",
+              "displayName": "role",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "run_id",
+              "displayName": "run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "input",
+              "displayName": "input",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "resume_input",
+              "displayName": "resume_input",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "provider",
+              "displayName": "provider",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "poll_seconds",
+              "displayName": "poll_seconds",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "max_polls",
+              "displayName": "max_polls",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "max_retries",
+              "displayName": "max_retries",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "retry_delays",
+              "displayName": "retry_delays",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -12464,
+        2736
+      ],
+      "id": "9d619d1a-dd85-4c4f-8a67-2e3ced3f9981",
+      "name": "Architect Start"
+    },
+    {
+      "parameters": {
+        "jsCode": "const status=String($json.status??'').toLowerCase(); const route=String($json.route??'').toLowerCase(); const errorText=String($json.error??''); return [{json:{...$json,architect_status:status,architect_route:route,architect_output:String($json.output??''),architect_poll_count:Number($json.poll_count??0),architect_run_not_found:Boolean($json.run_not_found??false),http_error_code:$json.http_code??null,hermes_error:errorText,transient_error:route==='transient_error'}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -11776,
+        2736
+      ],
+      "id": "8d808cc5-4939-4953-acf4-07429c2ac21c",
+      "name": "Evaluate Architect"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "architect-completed",
+              "leftValue": "={{$json.architect_route}}",
+              "rightValue": "completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -11552,
+        2544
+      ],
+      "id": "20b0b07e-69b8-41b5-ade6-2e62fc71c201",
+      "name": "Architect Completed?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = String(\n  $json.output ??\n  $json.response ??\n  $json.content ??\n  $json.hermes_output ??\n  ''\n).trim();\n\nif (!raw) {\n  throw new Error('Architect returned empty output.');\n}\n\nfunction extractJsonObject(text) {\n  const cleaned = text\n    .replace(/```json\\s*/gi, '')\n    .replace(/```\\s*/g, '')\n    .trim();\n\n  // 1. Попробовать распарсить весь ответ.\n  try {\n    return JSON.parse(cleaned);\n  } catch (_) {\n    // continue\n  }\n\n  // 2. Найти JSON object с корректным балансом {}.\n  let start = -1;\n  let depth = 0;\n  let inString = false;\n  let escaped = false;\n\n  for (let i = 0; i < cleaned.length; i++) {\n    const ch = cleaned[i];\n\n    if (inString) {\n      if (escaped) {\n        escaped = false;\n      } else if (ch === '\\\\') {\n        escaped = true;\n      } else if (ch === '\"') {\n        inString = false;\n      }\n      continue;\n    }\n\n    if (ch === '\"') {\n      inString = true;\n      continue;\n    }\n\n    if (ch === '{') {\n      if (start === -1) {\n        start = i;\n      }\n      depth++;\n      continue;\n    }\n\n    if (ch === '}') {\n      if (depth > 0) {\n        depth--;\n      }\n\n      if (depth === 0 && start !== -1) {\n        const candidate = cleaned.slice(start, i + 1);\n\n        try {\n          return JSON.parse(candidate);\n        } catch (_) {\n          start = -1;\n        }\n      }\n    }\n  }\n\n  throw new Error(\n    `Architect returned invalid JSON. Raw output:\\n${text}`\n  );\n}\n\nconst plan = extractJsonObject(raw);\n\nif (!plan || typeof plan !== 'object') {\n  throw new Error('Architect response is not a JSON object.');\n}\n\nif (!Array.isArray(plan.tasks)) {\n  throw new Error(\n    `Architect response does not contain tasks array. Parsed keys: ${Object.keys(plan).join(', ')}. The Architect must DECOMPOSE the mission into Worker tasks and must not execute or answer the mission directly.`\n  );\n}\n\nif (plan.tasks.length === 0) {\n  throw new Error('Architect returned an empty tasks array.');\n}\n\nconst maxTasks = Number(\n  $('Constants').first().json.max_tasks ?? 20\n);\n\nplan.tasks = plan.tasks.slice(0, maxTasks);\n\nfor (const task of plan.tasks) {\n  if (\n    !task ||\n    typeof task !== 'object' ||\n    !task.id ||\n    !task.title ||\n    !task.objective ||\n    !Array.isArray(task.acceptance_criteria)\n  ) {\n    throw new Error(\n      `Invalid task definition: ${JSON.stringify(task)}`\n    );\n  }\n\n  if (!Array.isArray(task.verification)) {\n    task.verification = [];\n  }\n\n  if (!Array.isArray(task.scope)) {\n    task.scope = [];\n  }\n\n  if (!Array.isArray(task.dependencies)) {\n    task.dependencies = [];\n  }\n}\n\nreturn [\n  {\n    json: {\n      plan_summary: String(plan.summary ?? ''),\n      tasks: plan.tasks,\n      task_index: 0,\n      task_attempt: 1,\n      total_tasks: plan.tasks.length,\n      review_feedback: ''\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -12448,
+        2240
+      ],
+      "id": "fa042199-0e1e-4032-9130-06aa28be6659",
+      "name": "Parse Plan"
+    },
+    {
+      "parameters": {
+        "jsCode": "const tasks = Array.isArray($json.tasks) ? $json.tasks : [];\nconst index = Number($json.task_index ?? 0);\n\nif (index >= tasks.length) {\n  return [{\n    json: {\n      ...$json,\n      execution_route: 'all_tasks_completed'\n    }\n  }];\n}\n\nconst task = tasks[index];\nconst feedback = String($json.review_feedback ?? '');\n\nconst workerPrompt = [\n  $('Prompt Templates').first().json.worker_prompt,\n  '',\n  `TASK ${task.id}: ${task.title}`,\n  '',\n  'OBJECTIVE:',\n  task.objective,\n  '',\n  'ACCEPTANCE CRITERIA:',\n  task.acceptance_criteria\n    .map((x, i) => `${i + 1}. ${x}`)\n    .join('\\n'),\n  '',\n  'VERIFICATION:',\n  task.verification.join('\\n'),\n  '',\n  'SCOPE:',\n  task.scope.join('\\n'),\n  '',\n  feedback ? 'PREVIOUS REVIEW FEEDBACK:' : '',\n  feedback\n].filter(Boolean).join('\\n');\n\nreturn [{\n  json: {\n    ...$json,\n    execution_route: 'run_task',\n    current_task: task,\n    current_task_id: task.id,\n    worker_prompt: workerPrompt\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -11632,
+        2144
+      ],
+      "id": "df27a05b-f083-43e7-b533-d7bf705642ca",
+      "name": "Prepare Current Task"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "all-completed",
+              "leftValue": "={{$json.execution_route}}",
+              "rightValue": "all_tasks_completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -11168,
+        2384
+      ],
+      "id": "1f5f47e7-4cd1-46b5-bc27-97ba279ecdb2",
+      "name": "All Tasks Completed?"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "k6G9hlUpTK5eCBAK",
+          "mode": "list",
+          "cachedResultName": "Hermes Run Manager v2"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "role": "worker",
+            "run_id": "={{ $('Prepare Current Task').isExecuted ? '' : String($('Restore Saved Task State').last().json.worker_run_id ?? '') }}",
+            "session_id": "={{ String(($('Prepare Current Task').isExecuted ? $('Prepare Current Task').last().json : $('Restore Saved Task State').last().json).worker_session_id ?? '') }}",
+            "input": "={{ String(($('Prepare Current Task').isExecuted ? $('Prepare Current Task').last().json : $('Restore Saved Task State').last().json).worker_prompt ?? $json.worker_prompt ?? '') }}",
+            "resume_input": "Continue the existing Worker task from the saved Hermes session. Do not start over. Use the existing session context and return the complete result for the current task.",
+            "model": "={{ $('Constants').first().json.worker_model }}",
+            "provider": "={{ $('Constants').first().json.worker_provider }}",
+            "poll_seconds": "={{ $('Constants').first().json.worker_poll_seconds }}",
+            "max_polls": "={{ $('Constants').first().json.worker_max_polls }}",
+            "max_retries": "={{ $('Constants').first().json.worker_max_provider_retries }}",
+            "retry_count": 0,
+            "retry_delays": "={{ $('Constants').first().json.retry_delays }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "role",
+              "displayName": "role",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "run_id",
+              "displayName": "run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "input",
+              "displayName": "input",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "resume_input",
+              "displayName": "resume_input",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "provider",
+              "displayName": "provider",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "poll_seconds",
+              "displayName": "poll_seconds",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "max_polls",
+              "displayName": "max_polls",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "max_retries",
+              "displayName": "max_retries",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "retry_count",
+              "displayName": "retry_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "retry_delays",
+              "displayName": "retry_delays",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -10944,
+        2256
+      ],
+      "id": "ea5d6969-3ffc-4bd6-993d-63e4c66af3e5",
+      "name": "Worker Start"
+    },
+    {
+      "parameters": {
+        "jsCode": "const status=String($json.worker_status??'').toLowerCase(); \nconst route=String($json.worker_route??'').toLowerCase(); \nreturn [{json:{...$json,\n               worker_status:status,\n               worker_route:route,\n               worker_output:String($json.output??''),\n               worker_poll_count:Number($json.poll_count??0),\n               worker_run_not_found:Boolean($json.run_not_found??false),\n               http_error_code:$json.http_code??null,\n               hermes_error:String($json.error??''),\n               transient_error:route==='transient_error'}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -10032,
+        2256
+      ],
+      "id": "d5bd518e-fa93-4599-a6ca-c4072cb1d355",
+      "name": "Evaluate Worker"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "worker-completed",
+              "leftValue": "={{$json.worker_route}}",
+              "rightValue": "completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -9584,
+        2256
+      ],
+      "id": "5ce023f1-f9dd-48cc-8e70-833d41889a52",
+      "name": "Worker Completed?"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "k6G9hlUpTK5eCBAK",
+          "mode": "list",
+          "cachedResultName": "Hermes Run Manager v2"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "role": "reviewer",
+            "run_id": "={{ $('Prepare Current Task').isExecuted ? '' : String($('Restore Saved Task State').last().json.reviewer_run_id ?? '') }}",
+            "session_id": "={{ String(($('Prepare Current Task').isExecuted ? $('Prepare Current Task').last().json : $('Restore Saved Task State').last().json).reviewer_session_id ?? '') }}",
+            "input": "={{ [ $('Prompt Templates').first().json.reviewer_prompt, '', 'ORIGINAL GOAL:', $('Mission').first().json.original_goal, '', 'CURRENT TASK:', String(($('Prepare Current Task').isExecuted ? $('Prepare Current Task').last().json : $('Restore Saved Task State').last().json).current_task?.title ?? ($('Prepare Current Task').isExecuted ? $('Prepare Current Task').last().json : $('Restore Saved Task State').last().json).tasks?.[($('Prepare Current Task').isExecuted ? $('Prepare Current Task').last().json : $('Restore Saved Task State').last().json).task_index]?.title ?? ''), '', 'OBJECTIVE:', String(($('Prepare Current Task').isExecuted ? $('Prepare Current Task').last().json : $('Restore Saved Task State').last().json).current_task?.objective ?? ($('Prepare Current Task').isExecuted ? $('Prepare Current Task').last().json : $('Restore Saved Task State').last().json).tasks?.[($('Prepare Current Task').isExecuted ? $('Prepare Current Task').last().json : $('Restore Saved Task State').last().json).task_index]?.objective ?? ''), '', 'ACCEPTANCE CRITERIA:', (($('Prepare Current Task').isExecuted ? $('Prepare Current Task').last().json : $('Restore Saved Task State').last().json).current_task?.acceptance_criteria ?? ($('Prepare Current Task').isExecuted ? $('Prepare Current Task').last().json : $('Restore Saved Task State').last().json).tasks?.[($('Prepare Current Task').isExecuted ? $('Prepare Current Task').last().json : $('Restore Saved Task State').last().json).task_index]?.acceptance_criteria ?? []).join('\\n'), '', 'VERIFICATION:', (($('Prepare Current Task').isExecuted ? $('Prepare Current Task').last().json : $('Restore Saved Task State').last().json).current_task?.verification ?? ($('Prepare Current Task').isExecuted ? $('Prepare Current Task').last().json : $('Restore Saved Task State').last().json).tasks?.[($('Prepare Current Task').isExecuted ? $('Prepare Current Task').last().json : $('Restore Saved Task State').last().json).task_index]?.verification ?? []).join('\\n'), '', 'SCOPE:', (($('Prepare Current Task').isExecuted ? $('Prepare Current Task').last().json : $('Restore Saved Task State').last().json).current_task?.scope ?? ($('Prepare Current Task').isExecuted ? $('Prepare Current Task').last().json : $('Restore Saved Task State').last().json).tasks?.[($('Prepare Current Task').isExecuted ? $('Prepare Current Task').last().json : $('Restore Saved Task State').last().json).task_index]?.scope ?? []).join('\\n'), '', 'WORKER RESULT:', String($json.worker_output ?? '') ].join('\\n') }}",
+            "resume_input": "Continue the existing Reviewer task from the saved Hermes session. Do not start the review over. Use the existing session context and return only the required JSON acceptance result.",
+            "model": "={{ $('Constants').first().json.reviewer_model }}",
+            "provider": "={{ $('Constants').first().json.reviewer_provider }}",
+            "poll_seconds": "={{ $('Constants').first().json.reviewer_poll_seconds }}",
+            "max_polls": "={{ $('Constants').first().json.reviewer_max_polls }}",
+            "max_retries": "={{ $('Constants').first().json.reviewer_max_provider_retries }}",
+            "retry_count": 0,
+            "retry_delays": "={{ $('Constants').first().json.retry_delays }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "role",
+              "displayName": "role",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "run_id",
+              "displayName": "run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "input",
+              "displayName": "input",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "resume_input",
+              "displayName": "resume_input",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "provider",
+              "displayName": "provider",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "poll_seconds",
+              "displayName": "poll_seconds",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "max_polls",
+              "displayName": "max_polls",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "max_retries",
+              "displayName": "max_retries",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "retry_count",
+              "displayName": "retry_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "retry_delays",
+              "displayName": "retry_delays",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -8752,
+        1744
+      ],
+      "id": "00886f86-da45-4b75-9529-820a67cd85ae",
+      "name": "Reviewer Start"
+    },
+    {
+      "parameters": {
+        "jsCode": "function unwrap(value) { const x = value?.json ?? value?.data ?? value ?? {}; return x && typeof x === 'object' && !Array.isArray(x) ? x : {}; }\nconst result = unwrap($json);\nconst status = String(\n  $json.status ??\n  $json.reviewer_status ??\n  ''\n).toLowerCase();\n\nconst route = String(\n  $json.reviewer_route ??\n  $json.route ??\n  (status === 'completed' ? 'completed' : '')\n).toLowerCase();\nreturn [{json:{...result,\n               reviewer_status:status,\n               reviewer_route:route,\n               reviewer_output: String(\n  result.output ??\n  result.reviewer_output ??\n  result.response ??\n  result.content ??\n  ''\n),\n               reviewer_poll_count:Number(result.poll_count??0),\n               reviewer_run_not_found:Boolean(result.run_not_found??false),\n               http_error_code:result.http_code??null,hermes_error:String(result.error??''),\n               transient_error:route==='transient_error'}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -7984,
+        1936
+      ],
+      "id": "c539e4e5-be1d-41e3-947a-d4fe039529b9",
+      "name": "Evaluate Reviewer"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "reviewer-completed",
+              "leftValue": "={{ String($json.reviewer_route ?? $json.route ?? '').toLowerCase() }}",
+              "rightValue": "completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -7664,
+        1936
+      ],
+      "id": "fb424d9d-ef27-4273-82b3-c3598ef2f051",
+      "name": "Reviewer Completed?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = String(\n  $json.output ??\n  $json.reviewer_output ??\n  $json.response ??\n  $json.content ??\n  $json.hermes_output ??\n  ''\n).trim();\n\nif (!raw) {\n  throw new Error('Reviewer returned empty output');\n}\n\nlet text = raw\n  .replace(/^```json\\s*/i, '')\n  .replace(/^```\\s*/i, '')\n  .replace(/\\s*```$/i, '')\n  .trim();\n\nfunction extractReviewObject(input) {\n  const candidates = [];\n  let start = -1;\n  let depth = 0;\n  let inString = false;\n  let escaped = false;\n\n  for (let i = 0; i < input.length; i++) {\n    const ch = input[i];\n\n    if (inString) {\n      if (escaped) {\n        escaped = false;\n      } else if (ch === '\\\\') {\n        escaped = true;\n      } else if (ch === '\"') {\n        inString = false;\n      }\n      continue;\n    }\n\n    if (ch === '\"') {\n      inString = true;\n      continue;\n    }\n\n    if (ch === '{') {\n      if (depth === 0) start = i;\n      depth++;\n      continue;\n    }\n\n    if (ch === '}') {\n      if (depth === 0) continue;\n      depth--;\n      if (depth === 0 && start !== -1) {\n        const candidate = input.slice(start, i + 1);\n        try {\n          const parsed = JSON.parse(candidate);\n          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {\n            candidates.push(parsed);\n          }\n        } catch (_) {\n          // Ignore malformed object candidates and continue scanning.\n        }\n        start = -1;\n      }\n    }\n  }\n\n  const review = candidates.find(candidate => {\n    const status = String(candidate.status ?? '').toLowerCase();\n    const score = Number(candidate.score);\n    return (\n      ['pass', 'needs_changes'].includes(status) &&\n      Number.isFinite(score) &&\n      score >= 0 && score <= 100 &&\n      Object.prototype.hasOwnProperty.call(candidate, 'reason') &&\n      Object.prototype.hasOwnProperty.call(candidate, 'next_task')\n    );\n  });\n\n  if (!review) {\n    throw new Error(\n      'Reviewer output does not contain a valid review JSON object. ' +\n      'Expected status, score, reason and next_task.'\n    );\n  }\n\n  return review;\n}\n\nconst review = extractReviewObject(text);\nconst reviewStatus = String(review.status ?? '').toLowerCase();\nconst reviewScore = Number(review.score ?? 0);\nconst reviewReason = String(review.reason ?? '');\nconst reviewNextTask = String(review.next_task ?? '');\n\nreturn [{\n  json: {\n    ...$json,\n    review,\n    review_valid: true,\n    review_raw: raw,\n    review_status: reviewStatus,\n    review_score: reviewScore,\n    review_reason: reviewReason,\n    review_next_task: reviewNextTask\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -6896,
+        1184
+      ],
+      "id": "c33e1605-1608-441f-947e-cf7bbd47ed78",
+      "name": "Parse Review"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "review-passed",
+              "leftValue": "={{$json.review_status}}",
+              "rightValue": "pass",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -5840,
+        1184
+      ],
+      "id": "6b0f8720-5717-4958-a555-652397c6c55a",
+      "name": "Review Passed?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $('Prepare Current Task').isExecuted\n  ? $('Prepare Current Task').last().json\n  : $('Restore Saved Task State').last().json;\n\nconst nextIndex = Number(base.task_index ?? 0) + 1;\nconst tasks = Array.isArray(base.tasks) ? base.tasks : [];\n\nif (nextIndex >= tasks.length) {\n  return [{\n    json: {\n      ...base,\n      task_index: nextIndex,\n      execution_route: 'all_tasks_completed',\n      last_review_score: Number($json.review_score ?? 0),\n      last_review_reason: String($json.review_reason ?? '')\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    ...base,\n    task_index: nextIndex,\n    task_attempt: 1,\n    review_feedback: '',\n    execution_route: 'run_task',\n    last_review_score: Number($json.review_score ?? 0),\n    last_review_reason: String($json.review_reason ?? '')\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -5632,
+        1168
+      ],
+      "id": "4bff77e1-ffc8-4836-bfac-ceabd8d6abce",
+      "name": "Advance Task"
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $('Prepare Current Task').isExecuted\n  ? $('Prepare Current Task').last().json\n  : $('Restore Saved Task State').last().json;\n\nconst currentAttempt = Number(base.task_attempt ?? 1);\nconst maxAttempts = Number(\n  $('Constants').first().json.max_attempts_per_task ?? 3\n);\n\nif (currentAttempt >= maxAttempts) {\n  return [{\n    json: {\n      ...base,\n      execution_route: 'failed',\n      final_status: 'failed_task_attempt_limit',\n      failure_reason: String(\n        $json.review_reason ?? 'Maximum task attempts reached.'\n      ),\n      last_review_score: Number($json.review_score ?? 0),\n      last_review_reason: String($json.review_reason ?? '')\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    ...base,\n    task_attempt: currentAttempt + 1,\n    review_feedback: String(\n      $json.review_next_task ||\n      $json.review_reason ||\n      ''\n    ),\n    execution_route: 'run_task',\n    last_review_score: Number($json.review_score ?? 0),\n    last_review_reason: String($json.review_reason ?? '')\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -5616,
+        1360
+      ],
+      "id": "f952fe66-79c7-44da-a0d9-24ba4e1f94c9",
+      "name": "Retry Current Task"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "continue-run",
+              "leftValue": "={{$json.execution_route}}",
+              "rightValue": "run_task",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -4736,
+        1376
+      ],
+      "id": "bbc0a521-c875-4881-8ecf-89bd08308f68",
+      "name": "Continue Workflow?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const status = String(\n  $json.final_status ||\n  $json.reviewer_route ||\n  $json.worker_route ||\n  $json.architect_route ||\n  'failed'\n);\n\nconst role =\n  ($json.reviewer_route || $json.reviewer_status) ? 'reviewer' :\n  ($json.worker_route || $json.worker_status) ? 'worker' :\n  ($json.architect_route || $json.architect_status) ? 'architect' :\n  'task';\n\nconst reason = String(\n  $json.failure_reason ||\n  $json.last_review_reason ||\n  $json.hermes_error ||\n  $json.error ||\n  `Hermes ${role} failed.`\n);\n\nreturn [{ json: { status, role, reason, run_id: String($json.run_id ?? ''), http_error_code: $json.http_error_code ?? null, task_id: String($json.current_task_id ?? ''), task_attempt: Number($json.task_attempt ?? 0), provider_error: String($json.provider_error ?? '') } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4112,
+        3040
+      ],
+      "id": "1f7a99ba-ba7c-447c-b7d4-d3b86b84a72a",
+      "name": "Failure Result"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    status: 'approved',\n    plan_summary: String($json.plan_summary ?? ''),\n    total_tasks: Number($json.total_tasks ?? 0),\n    completed_tasks: Number($json.task_index ?? 0),\n    last_task: String($json.current_task_id ?? ''),\n    last_review_score: Number($json.last_review_score ?? 0),\n    reason: String($json.last_review_reason ?? 'All planned tasks passed independent review.')\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4112,
+        3248
+      ],
+      "id": "690a60ef-d0f6-4bbf-b022-db23e8e5e87f",
+      "name": "Approved Result"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "hermes_config",
+          "mode": "name"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "profile_id",
+              "condition": "eq",
+              "keyValue": "default"
+            }
+          ]
+        },
+        "returnAll": false,
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -14384,
+        1984
+      ],
+      "id": "1a3588c6-eff0-4e60-a375-9d8c1cc2d743",
+      "name": "Load Config",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "agent_prompts",
+          "mode": "name"
+        },
+        "returnAll": true,
+        "limit": 100
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -13840,
+        1984
+      ],
+      "id": "24c61055-86a1-420e-9032-1cc1c2039426",
+      "name": "Load Prompts",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $('Load Prompts').all().map(item => item.json || {});\nconst result = {};\nfor (const agent of ['architect','worker','reviewer']) {\n  const candidates = rows\n    .filter(r => String(r.agent_id ?? '').trim() === agent)\n    .filter(r => r.enabled === true || String(r.enabled ?? '').toLowerCase() === 'true')\n    .sort((a,b) => Number(b.version ?? 0) - Number(a.version ?? 0));\n  if (!candidates.length) throw new Error(`No enabled prompt found for agent '${agent}'.`);\n  result[`${agent}_prompt`] = String(candidates[0].system_prompt ?? '').trim();\n  if (!result[`${agent}_prompt`]) throw new Error(`Prompt '${agent}' is empty.`);\n}\nreturn [{json:result}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -14400,
+        1792
+      ],
+      "id": "e8474367-92b5-43be-8dda-39e457cf594a",
+      "name": "Prompt Templates"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $('Load Config').all().map(item => item.json || {});\nconst row = rows.find(r => String(r.profile_id ?? '').trim() === 'default' && (r.enabled === true || String(r.enabled ?? '').toLowerCase() === 'true')) || rows[0];\nif (!row) throw new Error('No enabled default Hermes configuration found in Data Table hermes_config.');\n\nfunction num(value, field, min = 0) {\n  const n = Number(value);\n  if (!Number.isFinite(n) || n < min) throw new Error(`Invalid ${field}: ${value}`);\n  return n;\n}\n\nlet retryDelays = [15,30,60,120,300];\nif (String(row.retry_delays_json ?? '').trim()) {\n  try {\n    const parsed = JSON.parse(String(row.retry_delays_json));\n    if (!Array.isArray(parsed) || parsed.some(v => !Number.isFinite(Number(v)) || Number(v) < 0)) throw new Error('retry_delays_json must be a JSON array of non-negative numbers');\n    retryDelays = parsed.map(Number);\n  } catch (e) {\n    throw new Error(`Invalid retry_delays_json: ${e.message}`);\n  }\n}\n\nreturn [{json:{\n  planner_model:String(row.architect_model ?? '').trim(),\n  planner_provider:String(row.architect_provider ?? '').trim(),\n  worker_model:String(row.worker_model ?? '').trim(),\n  worker_provider:String(row.worker_provider ?? '').trim(),\n  reviewer_model:String(row.reviewer_model ?? '').trim(),\n  reviewer_provider:String(row.reviewer_provider ?? '').trim(),\n  max_tasks:num(row.max_tasks,'max_tasks',1),\n  max_attempts_per_task:num(row.max_attempts_per_task,'max_attempts_per_task',1),\n  architect_max_provider_retries:num(row.architect_max_retries,'architect_max_provider_retries',0),\n  worker_max_provider_retries:num(row.worker_max_retries,'worker_max_provider_retries',0),\n  reviewer_max_provider_retries:num(row.reviewer_max_retries,'reviewer_max_provider_retries',0),\n  architect_max_polls:num(row.architect_max_polls,'architect_max_polls',1),\n  worker_max_polls:num(row.worker_max_polls,'worker_max_polls',1),\n  reviewer_max_polls:num(row.reviewer_max_polls,'reviewer_max_polls',1),\n  architect_poll_seconds:num(row.architect_poll_seconds,'architect_poll_seconds',1),\n  worker_poll_seconds:num(row.worker_poll_seconds,'worker_poll_seconds',1),\n  reviewer_poll_seconds:num(row.reviewer_poll_seconds,'reviewer_poll_seconds',1),\n  state_namespace:String(row.state_namespace ?? 'llama.cpp-dashboard-v1'),\n  execution_mode:String(row.execution_mode ?? 'production'),\n  retry_delays:retryDelays\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -14064,
+        1792
+      ],
+      "id": "9b64368a-145f-4b94-95ba-6786494ac321",
+      "name": "Constants"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "reviewer-current-task-id",
+              "name": "current_task_id",
+              "value": "={{ String(\n  $('Prepare Current Task').isExecuted\n    ? $('Prepare Current Task').last().json.current_task_id\n    : (\n        $('Restore Saved Task State').last().json.tasks?.[\n          Number($('Restore Saved Task State').last().json.task_index ?? 0)\n        ]?.id ??\n        $json.current_task_id ??\n        ''\n      )\n) }}",
+              "type": "string"
+            },
+            {
+              "id": "reviewer-provider-retry-count",
+              "name": "reviewer_provider_retry_count",
+              "value": "={{ Number($json.reviewer_provider_retry_count ?? 0) }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -8976,
+        1936
+      ],
+      "id": "c02817b0-3cbc-4d5c-9851-9effa60825e5",
+      "name": "Reviewer State"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "445de469-3eb1-491b-904d-0c6a1057f386",
+              "name": "output",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -12928,
+        2368
+      ],
+      "id": "a7bd0422-e5c0-411c-9829-1e08c8cb456a",
+      "name": "Upload from file"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -12304,
+        2240
+      ],
+      "id": "b5ff3289-a13f-46d3-97ef-b30ef660037d",
+      "name": "Send a text message",
+      "webhookId": "1b7dcc6d-8ef1-46c3-a072-122e942bc31c",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "return items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -11504,
+        2240
+      ],
+      "id": "654c6e52-7800-40eb-84f2-89118efa05a7",
+      "name": "Send a text message1",
+      "webhookId": "1b7dcc6d-8ef1-46c3-a072-122e942bc31c",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "return items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3840,
+        3248
+      ],
+      "id": "3d412150-011a-4f12-8f54-eeae152286ab",
+      "name": "Send a text message2",
+      "webhookId": "1b7dcc6d-8ef1-46c3-a072-122e942bc31c",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "return items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -6192,
+        1184
+      ],
+      "id": "9504b125-7b1c-4870-afeb-27cf039833ae",
+      "name": "Send a text message3",
+      "webhookId": "1b7dcc6d-8ef1-46c3-a072-122e942bc31c",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "266f6ecf-c8ea-412c-a53d-51b1e04c759b",
+              "leftValue": "={{ $json.output }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -12688,
+        2368
+      ],
+      "id": "c6f8fe20-8f17-4040-8983-401538709389",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3280,
+        3040
+      ],
+      "id": "c5794723-333b-456a-b1d2-eb5de1c007c9",
+      "name": "Send a text message4",
+      "webhookId": "1b7dcc6d-8ef1-46c3-a072-122e942bc31c",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ...$('Parse Plan').first().json, telegram_plan_sent: true } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -12128,
+        2240
+      ],
+      "id": "4adfe3b1-c88f-4cd5-8efe-c851fb1a1d31",
+      "name": "Restore Plan Context"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ...$('Prepare Current Task').last().json, telegram_task_sent: true } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -11344,
+        2240
+      ],
+      "id": "5a87edc4-e0a0-4a03-8e7f-ff070a32d48e",
+      "name": "Restore Task Context"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ...$('Parse Review').last().json, telegram_review_sent: true } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -6016,
+        1184
+      ],
+      "id": "fb89a289-2fc2-4f1d-9341-9a5dae85e5ab",
+      "name": "Restore Review Context"
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "Autonomous Agent Task State",
+        "columns": {
+          "column": [
+            {
+              "name": "state_key"
+            },
+            {
+              "name": "plan_json"
+            },
+            {
+              "name": "task_index",
+              "type": "number"
+            },
+            {
+              "name": "task_attempt",
+              "type": "number"
+            },
+            {
+              "name": "status"
+            },
+            {
+              "name": "review_feedback"
+            },
+            {
+              "name": "last_review_score",
+              "type": "number"
+            },
+            {
+              "name": "last_review_reason"
+            },
+            {
+              "name": "updated_at"
+            },
+            {
+              "name": "reviewer_run_id"
+            },
+            {
+              "name": "reviewer_status"
+            },
+            {
+              "name": "reviewer_session_id"
+            },
+            {
+              "name": "worker_run_id"
+            },
+            {
+              "name": "worker_status"
+            },
+            {
+              "name": "worker_session_id"
+            }
+          ]
+        },
+        "options": {
+          "createIfNotExists": true
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -13840,
+        1792
+      ],
+      "id": "e0fb7603-48cf-4ca7-9128-8942c72b1c19",
+      "name": "Ensure Task State Table"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Autonomous Agent Task State"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "state_key",
+              "keyValue": "={{$('Constants').first().json.state_namespace}}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -13456,
+        1792
+      ],
+      "id": "b234bd9d-5709-4bf6-9f8e-60d0298eb3f4",
+      "name": "Load Task State",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "has-saved-plan",
+              "leftValue": "={{\n  (\n    String($json.status ?? '') === 'active'\n    ||\n    String($json.status ?? '') === 'failed'\n  )\n  &&\n  String($json.plan_json ?? '').trim() !== ''\n}}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -13248,
+        1792
+      ],
+      "id": "3fd5f9cb-0dc6-45f5-9d48-dbb4ad04923f",
+      "name": "Resume Saved State?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const planText = String($json.plan_json ?? '').trim();\n\nif (!planText) {\n  throw new Error('Saved task state contains no plan_json.');\n}\n\nlet plan;\n\ntry {\n  plan = JSON.parse(planText);\n} catch (error) {\n  throw new Error(`Saved task state contains invalid plan_json: ${error.message}`);\n}\n\nif (\n  !plan ||\n  typeof plan !== 'object' ||\n  !Array.isArray(plan.tasks) ||\n  plan.tasks.length === 0\n) {\n  throw new Error('Saved task state contains an invalid or empty task plan.');\n}\n\nconst taskIndex = Number($json.task_index ?? 0);\n\nif (\n  !Number.isInteger(taskIndex) ||\n  taskIndex < 0 ||\n  taskIndex > plan.tasks.length\n) {\n  throw new Error(`Saved task state contains invalid task_index: ${$json.task_index}`);\n}\n\nreturn [{\n  json: {\n    plan_summary: String(plan.summary ?? ''),\n    tasks: plan.tasks,\n    task_index: taskIndex,\n    task_attempt: Number($json.task_attempt ?? 1),\n    total_tasks: plan.tasks.length,\n\n    review_feedback: String($json.review_feedback ?? ''),\n    last_review_score: Number($json.last_review_score ?? 0),\n    last_review_reason: String($json.last_review_reason ?? ''),\n\n    reviewer_run_id: String($json.reviewer_run_id ?? ''),\n    reviewer_status: String($json.reviewer_status ?? ''),\n    reviewer_session_id: String($json.reviewer_session_id ?? ''),\n\n    worker_run_id: String($json.worker_run_id ?? ''),\n    worker_status: String($json.worker_status ?? ''),\n    worker_session_id: String($json.worker_session_id ?? ''),\n\n    execution_route:\n      taskIndex >= plan.tasks.length\n        ? 'all_tasks_completed'\n        : 'run_task'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -13024,
+        1776
+      ],
+      "id": "5b348aa4-6405-4d3c-8db5-5f197378baec",
+      "name": "Restore Saved Task State"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Autonomous Agent Task State"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "state_key",
+              "keyValue": "={{$('Constants').first().json.state_namespace}}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "state_key": "={{$('Constants').first().json.state_namespace}}",
+            "plan_json": "={{ JSON.stringify({ summary: $('Parse Plan').first().json.plan_summary, tasks: $('Parse Plan').first().json.tasks }) }}",
+            "task_index": "=0",
+            "task_attempt": "=1",
+            "status": "active",
+            "review_feedback": "",
+            "last_review_score": "=0",
+            "last_review_reason": "",
+            "updated_at": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "state_key",
+              "displayName": "state_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "plan_json",
+              "displayName": "plan_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_index",
+              "displayName": "task_index",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_attempt",
+              "displayName": "task_attempt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "review_feedback",
+              "displayName": "review_feedback",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_review_score",
+              "displayName": "last_review_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_review_reason",
+              "displayName": "last_review_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -11952,
+        2240
+      ],
+      "id": "9842cd07-2fdd-496d-bc84-ffff3b7cd605",
+      "name": "Persist Initial Task State"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    ...$('Restore Plan Context').last().json,\n    task_index: 0,\n    task_attempt: 1,\n    total_tasks: Number($('Parse Plan').first().json.total_tasks ?? $('Parse Plan').first().json.tasks.length),\n    review_feedback: '',\n    last_review_score: 0,\n    last_review_reason: '',\n    execution_route: 'run_task'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -11760,
+        2240
+      ],
+      "id": "eb68e5d6-8494-456f-b55e-e6f498ee096f",
+      "name": "Restore Plan After State Save"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Autonomous Agent Task State"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "state_key",
+              "keyValue": "={{$('Constants').first().json.state_namespace}}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "state_key": "={{$('Constants').first().json.state_namespace}}",
+            "plan_json": "={{ JSON.stringify({ summary: $('Advance Task').last().json.plan_summary, tasks: $('Advance Task').last().json.tasks }) }}",
+            "task_index": "={{ Number($('Advance Task').last().json.task_index ?? 0) }}",
+            "task_attempt": "={{ Number($('Advance Task').last().json.task_attempt ?? 1) }}",
+            "status": "={{ $('Advance Task').last().json.execution_route === 'all_tasks_completed' ? 'completed' : 'active' }}",
+            "review_feedback": "={{ String($('Advance Task').last().json.review_feedback ?? '') }}",
+            "last_review_score": "={{ Number($('Advance Task').last().json.last_review_score ?? 0) }}",
+            "last_review_reason": "={{ String($('Advance Task').last().json.last_review_reason ?? '') }}",
+            "updated_at": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "state_key",
+              "displayName": "state_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "plan_json",
+              "displayName": "plan_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_index",
+              "displayName": "task_index",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_attempt",
+              "displayName": "task_attempt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "review_feedback",
+              "displayName": "review_feedback",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_review_score",
+              "displayName": "last_review_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_review_reason",
+              "displayName": "last_review_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -5408,
+        1168
+      ],
+      "id": "41e21d58-34e0-4c50-ad10-e974f3dba428",
+      "name": "Persist Task Progress"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    ...$('Advance Task').last().json\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -5168,
+        1168
+      ],
+      "id": "d0ada229-1249-4a74-adc2-12723f48c3d0",
+      "name": "Restore Task After State Save"
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "Autonomous Agent Task Attempts",
+        "columns": {
+          "column": [
+            {
+              "name": "state_key"
+            },
+            {
+              "name": "task_id"
+            },
+            {
+              "name": "task_index",
+              "type": "number"
+            },
+            {
+              "name": "task_attempt",
+              "type": "number"
+            },
+            {
+              "name": "event_type"
+            },
+            {
+              "name": "worker_run_id"
+            },
+            {
+              "name": "worker_status"
+            },
+            {
+              "name": "worker_output"
+            },
+            {
+              "name": "worker_error"
+            },
+            {
+              "name": "reviewer_run_id"
+            },
+            {
+              "name": "reviewer_status"
+            },
+            {
+              "name": "reviewer_output"
+            },
+            {
+              "name": "reviewer_error"
+            },
+            {
+              "name": "review_status"
+            },
+            {
+              "name": "review_score",
+              "type": "number"
+            },
+            {
+              "name": "review_reason"
+            },
+            {
+              "name": "review_next_task"
+            },
+            {
+              "name": "created_at"
+            }
+          ]
+        },
+        "options": {
+          "createIfNotExists": true
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -13632,
+        1792
+      ],
+      "id": "06766d0f-2ed1-4c6e-8e8d-960c47a57146",
+      "name": "Ensure Task Attempt History Table"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Autonomous Agent Task Attempts"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "state_key": "={{$('Constants').first().json.state_namespace}}",
+            "task_id": "={{ String(\n  $('Prepare Current Task').isExecuted\n    ? $('Prepare Current Task').last().json.current_task_id\n    : (\n        $('Restore Saved Task State').last().json.tasks?.[\n          Number($('Restore Saved Task State').last().json.task_index ?? 0)\n        ]?.id ?? ''\n      )\n) }}",
+            "task_index": "={{ Number(\n  $('Prepare Current Task').isExecuted\n    ? $('Prepare Current Task').last().json.task_index\n    : ($('Restore Saved Task State').last().json.task_index ?? 0)\n) }}",
+            "task_attempt": "={{ Number(\n  $('Prepare Current Task').isExecuted\n    ? $('Prepare Current Task').last().json.task_attempt\n    : ($('Restore Saved Task State').last().json.task_attempt ?? 1)\n) }}",
+            "event_type": "worker_completed",
+            "worker_run_id": "={{ String(\n  $json.worker_run_id ??\n  ($('Worker Start').isExecuted\n    ? $('Worker Start').last().json.run_id\n    : '')\n) }}",
+            "worker_status": "={{ String($('Evaluate Worker').last().json.status ?? '') }}",
+            "worker_output": "={{ String($('Evaluate Worker').last().json.output ?? $('Evaluate Worker').last().json.response ?? $('Evaluate Worker').last().json.content ?? '') }}",
+            "review_score": 0,
+            "created_at": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "state_key",
+              "displayName": "state_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_id",
+              "displayName": "task_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_index",
+              "displayName": "task_index",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_attempt",
+              "displayName": "task_attempt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "event_type",
+              "displayName": "event_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "worker_run_id",
+              "displayName": "worker_run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "worker_status",
+              "displayName": "worker_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "worker_output",
+              "displayName": "worker_output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "worker_error",
+              "displayName": "worker_error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_run_id",
+              "displayName": "reviewer_run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_status",
+              "displayName": "reviewer_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_output",
+              "displayName": "reviewer_output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_error",
+              "displayName": "reviewer_error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "review_status",
+              "displayName": "review_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "review_score",
+              "displayName": "review_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "review_reason",
+              "displayName": "review_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "review_next_task",
+              "displayName": "review_next_task",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -9360,
+        1936
+      ],
+      "id": "4205458b-e65c-49ac-b160-f3e9308d3bf0",
+      "name": "Persist Worker Result"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Autonomous Agent Task Attempts"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "state_key": "={{$('Constants').first().json.state_namespace}}",
+            "task_id": "={{ String(\n  $('Restore Saved Task State').last().json.tasks[\n    Number($('Restore Saved Task State').last().json.task_index ?? 0)\n  ].id ?? ''\n) }}",
+            "task_index": "={{ Number(\n  $json.task_index ??\n  $('Restore Saved Task State').last().json.task_index ??\n  0\n) }}",
+            "task_attempt": "={{ Number(\n  $json.task_attempt ??\n  $('Restore Saved Task State').last().json.task_attempt ??\n  1\n) }}",
+            "event_type": "worker_terminal",
+            "worker_run_id": "={{ String(\n  $json.worker_run_id ??\n  ''\n) }}",
+            "worker_status": "={{ String($('Evaluate Worker').last().json.status ?? '') }}",
+            "worker_output": "={{ String($('Evaluate Worker').last().json.output ?? $('Evaluate Worker').last().json.response ?? $('Evaluate Worker').last().json.content ?? '') }}",
+            "worker_error": "={{ String($('Evaluate Worker').last().json.hermes_error ?? '') }}",
+            "review_score": 0,
+            "created_at": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "state_key",
+              "displayName": "state_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_id",
+              "displayName": "task_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_index",
+              "displayName": "task_index",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_attempt",
+              "displayName": "task_attempt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "event_type",
+              "displayName": "event_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "worker_run_id",
+              "displayName": "worker_run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "worker_status",
+              "displayName": "worker_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "worker_output",
+              "displayName": "worker_output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "worker_error",
+              "displayName": "worker_error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_run_id",
+              "displayName": "reviewer_run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_status",
+              "displayName": "reviewer_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_output",
+              "displayName": "reviewer_output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_error",
+              "displayName": "reviewer_error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "review_status",
+              "displayName": "review_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "review_score",
+              "displayName": "review_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "review_reason",
+              "displayName": "review_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "review_next_task",
+              "displayName": "review_next_task",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -8896,
+        2272
+      ],
+      "id": "7d874b63-6f78-4e38-a7e4-b5d5091bd546",
+      "name": "Persist Worker Terminal State"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Autonomous Agent Task Attempts"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "state_key": "={{ $('Constants').first().json.state_namespace }}",
+            "task_id": "={{ \n  String(\n    $('Prepare Current Task').isExecuted\n      ? $('Prepare Current Task').last().json.current_task_id\n      : (\n          $('Restore Saved Task State').last().json.tasks?.[\n            Number($('Restore Saved Task State').last().json.task_index ?? 0)\n          ]?.id ?? ''\n        )\n  )\n}}",
+            "task_index": "={{ Number($json.task_index ?? 0) }}",
+            "task_attempt": "={{ Number($json.task_attempt ?? 1) }}",
+            "event_type": "reviewer_completed",
+            "worker_run_id": "={{ String(\n  $json.worker_run_id ??\n  ($('Worker Start').isExecuted\n    ? $('Worker Start').last().json.run_id\n    : '')\n) }}",
+            "worker_status": "completed",
+            "worker_output": "={{ String(\n  $json.worker_output ??\n  ($('Evaluate Worker').isExecuted\n    ? (\n        $('Evaluate Worker').last().json.output ??\n        $('Evaluate Worker').last().json.response ??\n        $('Evaluate Worker').last().json.content ??\n        ''\n      )\n    : '')\n) }}",
+            "reviewer_run_id": "={{ String(\n  $json.reviewer_run_id ??\n  ($('Reviewer Start').isExecuted\n    ? $('Reviewer Start').last().json.run_id\n    : '')\n) }}",
+            "reviewer_status": "={{ String(\n  $json.reviewer_status ??\n  $json.status ??\n  ''\n) }}",
+            "reviewer_output": "={{ String(\n  $json.output ??\n  $json.response ??\n  $json.content ??\n  ''\n) }}",
+            "review_score": 0,
+            "created_at": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "state_key",
+              "displayName": "state_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_id",
+              "displayName": "task_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_index",
+              "displayName": "task_index",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_attempt",
+              "displayName": "task_attempt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "event_type",
+              "displayName": "event_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "worker_run_id",
+              "displayName": "worker_run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "worker_status",
+              "displayName": "worker_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "worker_output",
+              "displayName": "worker_output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "worker_error",
+              "displayName": "worker_error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_run_id",
+              "displayName": "reviewer_run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_status",
+              "displayName": "reviewer_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_output",
+              "displayName": "reviewer_output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_error",
+              "displayName": "reviewer_error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "review_status",
+              "displayName": "review_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "review_score",
+              "displayName": "review_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "review_reason",
+              "displayName": "review_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "review_next_task",
+              "displayName": "review_next_task",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -7280,
+        1184
+      ],
+      "id": "c24f0c37-1d1f-48ed-9be6-d49564578d07",
+      "name": "Persist Reviewer Result"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Autonomous Agent Task Attempts"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "state_key": "={{$('Constants').first().json.state_namespace}}",
+            "task_id": "={{\n  String(\n    $('Prepare Current Task').isExecuted\n      ? $('Prepare Current Task').last().json.current_task_id\n      : (\n          $('Restore Saved Task State').last().json.tasks?.[\n            Number($('Restore Saved Task State').last().json.task_index ?? 0)\n          ]?.id ?? ''\n        )\n  )\n}}",
+            "task_index": "={{\n  Number(\n    $('Prepare Current Task').isExecuted\n      ? $('Prepare Current Task').last().json.task_index\n      : ($('Restore Saved Task State').last().json.task_index ?? 0)\n  )\n}}",
+            "task_attempt": "={{\n  Number(\n    $('Prepare Current Task').isExecuted\n      ? $('Prepare Current Task').last().json.task_attempt\n      : ($('Restore Saved Task State').last().json.task_attempt ?? 1)\n  )\n}}",
+            "event_type": "reviewer_terminal",
+            "worker_run_id": "={{\n  String(\n    $('Worker Start').isExecuted\n      ? ($('Worker Start').last().json.run_id ?? '')\n      : ''\n  )\n}}",
+            "worker_status": "completed",
+            "worker_output": "={{\n  String(\n    $('Evaluate Worker').isExecuted\n      ? (\n          $('Evaluate Worker').last().json.output ??\n          $('Evaluate Worker').last().json.response ??\n          $('Evaluate Worker').last().json.content ??\n          ''\n        )\n      : ''\n  )\n}}",
+            "reviewer_run_id": "={{ String($json.reviewer_run_id ?? '') }}",
+            "reviewer_status": "={{ String($json.reviewer_status ?? $json.status ?? '') }}",
+            "reviewer_output": "={{ String($('Evaluate Reviewer').last().json.output ?? $('Evaluate Reviewer').last().json.response ?? $('Evaluate Reviewer').last().json.content ?? '') }}",
+            "reviewer_error": "={{\n  String(\n    $('Evaluate Reviewer').isExecuted\n      ? (\n          $('Evaluate Reviewer').last().json.output ??\n          $('Evaluate Reviewer').last().json.response ??\n          $('Evaluate Reviewer').last().json.content ??\n          ''\n        )\n      : ''\n  )\n}}",
+            "review_score": 0,
+            "created_at": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "state_key",
+              "displayName": "state_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_id",
+              "displayName": "task_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_index",
+              "displayName": "task_index",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_attempt",
+              "displayName": "task_attempt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "event_type",
+              "displayName": "event_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "worker_run_id",
+              "displayName": "worker_run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "worker_status",
+              "displayName": "worker_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "worker_output",
+              "displayName": "worker_output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "worker_error",
+              "displayName": "worker_error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_run_id",
+              "displayName": "reviewer_run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_status",
+              "displayName": "reviewer_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_output",
+              "displayName": "reviewer_output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_error",
+              "displayName": "reviewer_error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "review_status",
+              "displayName": "review_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "review_score",
+              "displayName": "review_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "review_reason",
+              "displayName": "review_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "review_next_task",
+              "displayName": "review_next_task",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -7248,
+        2144
+      ],
+      "id": "19a97534-8acb-42e2-ac3e-888483d87123",
+      "name": "Persist Reviewer Terminal State"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Autonomous Agent Task Attempts"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "state_key": "={{$('Constants').first().json.state_namespace}}",
+            "task_id": "={{\n  String(\n    $('Prepare Current Task').isExecuted\n      ? $('Prepare Current Task').last().json.current_task_id\n      : (\n          $('Restore Saved Task State').last().json.tasks?.[\n            Number($('Restore Saved Task State').last().json.task_index ?? 0)\n          ]?.id ?? ''\n        )\n  )\n}}",
+            "task_index": "={{\n  Number(\n    $('Prepare Current Task').isExecuted\n      ? $('Prepare Current Task').last().json.task_index\n      : ($('Restore Saved Task State').last().json.task_index ?? 0)\n  )\n}}",
+            "task_attempt": "={{\n  Number(\n    $('Prepare Current Task').isExecuted\n      ? $('Prepare Current Task').last().json.task_attempt\n      : ($('Restore Saved Task State').last().json.task_attempt ?? 1)\n  )\n}}",
+            "event_type": "review_parsed",
+            "worker_run_id": "={{\n  String(\n    $('Worker Start').isExecuted\n      ? ($('Worker Start').last().json.run_id ?? '')\n      : ''\n  )\n}}",
+            "worker_status": "completed",
+            "worker_output": "={{\n  String(\n    $('Evaluate Worker').isExecuted\n      ? (\n          $('Evaluate Worker').last().json.output ??\n          $('Evaluate Worker').last().json.response ??\n          $('Evaluate Worker').last().json.content ??\n          ''\n        )\n      : ''\n  )\n}}",
+            "reviewer_run_id": "={{ String($json.run_id ?? '') }}",
+            "reviewer_status": "completed",
+            "reviewer_output": "={{ String($('Parse Review').last().json.review_raw ?? '') }}",
+            "review_status": "={{ String($('Parse Review').last().json.review?.status ?? '') }}",
+            "review_score": "={{ Number($('Parse Review').last().json.review?.score ?? 0) }}",
+            "review_reason": "={{ String($('Parse Review').last().json.review?.reason ?? '') }}",
+            "review_next_task": "={{ String($('Parse Review').last().json.review?.next_task ?? '') }}",
+            "created_at": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "state_key",
+              "displayName": "state_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_id",
+              "displayName": "task_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_index",
+              "displayName": "task_index",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_attempt",
+              "displayName": "task_attempt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "event_type",
+              "displayName": "event_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "worker_run_id",
+              "displayName": "worker_run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "worker_status",
+              "displayName": "worker_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "worker_output",
+              "displayName": "worker_output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "worker_error",
+              "displayName": "worker_error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_run_id",
+              "displayName": "reviewer_run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_status",
+              "displayName": "reviewer_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_output",
+              "displayName": "reviewer_output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_error",
+              "displayName": "reviewer_error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "review_status",
+              "displayName": "review_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "review_score",
+              "displayName": "review_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "review_reason",
+              "displayName": "review_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "review_next_task",
+              "displayName": "review_next_task",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -6736,
+        1184
+      ],
+      "id": "17a866d6-2b03-4464-9f5f-736c59568e7b",
+      "name": "Persist Parsed Review"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Autonomous Agent Task State"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "state_key",
+              "keyValue": "={{$('Constants').first().json.state_namespace}}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "state_key": "={{$('Constants').first().json.state_namespace}}",
+            "plan_json": "={{\nJSON.stringify({\n  summary: String(\n    $('Prepare Current Task').isExecuted\n      ? $('Prepare Current Task').last().json.plan_summary\n      : $('Restore Saved Task State').last().json.plan_summary ?? ''\n  ),\n\n  tasks: (\n    $('Prepare Current Task').isExecuted\n      ? $('Prepare Current Task').last().json.tasks\n      : $('Restore Saved Task State').last().json.tasks\n  ) ?? [],\n\n  reviewer_run_id: String(\n    $('Save Reviewer Run Context').isExecuted\n      ? ($('Save Reviewer Run Context').last().json.reviewer_run_id ?? '')\n      : ($json.run_id ?? $('Restore Saved Task State').last().json.reviewer_run_id ?? '')\n  ),\n\n  reviewer_status: String(\n    $('Save Reviewer Run Context').isExecuted\n      ? ($('Save Reviewer Run Context').last().json.reviewer_status ?? '')\n      : ($json.status ?? $('Restore Saved Task State').last().json.reviewer_status ?? '')\n  ),\n\n  reviewer_session_id: String(\n    $('Save Reviewer Run Context').isExecuted\n      ? ($('Save Reviewer Run Context').last().json.reviewer_session_id ?? '')\n      : ($json.reviewer_session_id ?? $('Restore Saved Task State').last().json.reviewer_session_id ?? '')\n  )\n})\n}}",
+            "task_index": "={{\nNumber(\n  $('Prepare Current Task').isExecuted\n    ? $('Prepare Current Task').last().json.task_index\n    : ($('Restore Saved Task State').last().json.task_index ?? 0)\n)\n}}",
+            "task_attempt": "={{\nNumber(\n  $('Prepare Current Task').isExecuted\n    ? $('Prepare Current Task').last().json.task_attempt\n    : ($('Restore Saved Task State').last().json.task_attempt ?? 1)\n)\n}}",
+            "status": "active",
+            "review_feedback": "={{ String($('Parse Review').last().json.review?.next_task ?? $('Parse Review').last().json.review?.reason ?? '') }}",
+            "last_review_score": "={{\n  Number($('Parse Review').last().json.review?.score ?? 0)\n}}",
+            "last_review_reason": "={{\n  String($('Parse Review').last().json.review?.reason ?? '')\n}}",
+            "updated_at": "={{ new Date().toISOString() }}",
+            "reviewer_run_id": "={{\n  String(\n    $('Save Reviewer Run Context').isExecuted\n      ? ($('Save Reviewer Run Context').last().json.reviewer_run_id ?? '')\n      : ($json.run_id ?? $('Restore Saved Task State').last().json.reviewer_run_id ?? '')\n  )\n}}",
+            "reviewer_status": "={{\n  String(\n    $('Save Reviewer Run Context').isExecuted\n      ? ($('Save Reviewer Run Context').last().json.reviewer_status ?? '')\n      : ($json.status ?? $('Restore Saved Task State').last().json.reviewer_status ?? '')\n  )\n}}",
+            "reviewer_session_id": "={{\n  String(\n    $('Save Reviewer Run Context').isExecuted\n      ? ($('Save Reviewer Run Context').last().json.reviewer_session_id ?? '')\n      : ($json.reviewer_session_id ?? $('Restore Saved Task State').last().json.reviewer_session_id ?? '')\n  )\n}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "state_key",
+              "displayName": "state_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "plan_json",
+              "displayName": "plan_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_index",
+              "displayName": "task_index",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_attempt",
+              "displayName": "task_attempt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "review_feedback",
+              "displayName": "review_feedback",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_review_score",
+              "displayName": "last_review_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_review_reason",
+              "displayName": "last_review_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_run_id",
+              "displayName": "reviewer_run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_status",
+              "displayName": "reviewer_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_session_id",
+              "displayName": "reviewer_session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -6528,
+        1184
+      ],
+      "id": "81415b13-51cc-41b6-a0c5-22d084ef27ae",
+      "name": "Persist Reviewer State"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Autonomous Agent Task State"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "state_key",
+              "keyValue": "={{$('Constants').first().json.state_namespace}}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "state_key": "={{$('Constants').first().json.state_namespace}}",
+            "plan_json": "={{ JSON.stringify({ summary: $('Retry Current Task').last().json.plan_summary, tasks: $('Retry Current Task').last().json.tasks }) }}",
+            "task_index": "={{ Number($('Retry Current Task').last().json.task_index ?? 0) }}",
+            "task_attempt": "={{ Number($('Retry Current Task').last().json.task_attempt ?? 1) }}",
+            "status": "active",
+            "review_feedback": "={{ String($('Retry Current Task').last().json.review_feedback ?? '') }}",
+            "last_review_score": "={{ Number($('Retry Current Task').last().json.last_review_score ?? 0) }}",
+            "last_review_reason": "={{ String($('Retry Current Task').last().json.last_review_reason ?? '') }}",
+            "updated_at": "={{ new Date().toISOString() }}",
+            "worker_run_id": "={{ String($json.worker_run_id ?? '') }}",
+            "worker_status": "={{ String($json.worker_status ?? '') }}",
+            "worker_session_id": "={{ String($json.worker_session_id ?? '') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "state_key",
+              "displayName": "state_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "plan_json",
+              "displayName": "plan_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_index",
+              "displayName": "task_index",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_attempt",
+              "displayName": "task_attempt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "review_feedback",
+              "displayName": "review_feedback",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_review_score",
+              "displayName": "last_review_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_review_reason",
+              "displayName": "last_review_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_run_id",
+              "displayName": "reviewer_run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_status",
+              "displayName": "reviewer_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_session_id",
+              "displayName": "reviewer_session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "worker_session_id",
+              "displayName": "worker_session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "worker_run_id",
+              "displayName": "worker_run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "worker_status",
+              "displayName": "worker_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -5376,
+        1360
+      ],
+      "id": "2add0128-5bae-49bf-b0f2-921d4dbd2706",
+      "name": "Persist Retry State"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ...$('Retry Current Task').last().json } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -5168,
+        1360
+      ],
+      "id": "d7052155-2ce0-4e1a-ab36-2b10c1789b87",
+      "name": "Restore Retry State"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ...$('Evaluate Worker').last().json } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -9168,
+        1936
+      ],
+      "id": "fd442932-7da2-4b5f-8642-29cac612e6fd",
+      "name": "Restore Worker Result Context"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ...$('Evaluate Worker').last().json } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -8672,
+        2272
+      ],
+      "id": "4b234db1-7b4b-4bed-9bd0-c21c451c86f6",
+      "name": "Restore Worker Non-Transient Context"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ...$('Evaluate Reviewer').last().json } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -7072,
+        1184
+      ],
+      "id": "88acf16b-5929-4665-9793-a8b15c712f19",
+      "name": "Restore Reviewer Result Context"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ...$('Evaluate Reviewer').last().json } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -7056,
+        2144
+      ],
+      "id": "df4e940e-45c1-43d5-b1e9-9c6b21cb54ab",
+      "name": "Restore Reviewer Non-Transient Context"
+    },
+    {
+      "parameters": {
+        "jsCode": "const review = $('Parse Review').last().json ?? {};\n\nconst state = $('Prepare Current Task').isExecuted\n  ? $('Prepare Current Task').last().json\n  : ($('Restore Saved Task State').last().json ?? {});\n\nconst taskId = String(\n  state.current_task_id ??\n  state.tasks?.[Number(state.task_index ?? 0)]?.id ??\n  ''\n);\n\nconst reviewMessage = [\n  '🧪 REVIEW RESULT',\n  `Task: ${taskId}`,\n  `Status: ${String(review.review_status ?? '')}`,\n  `Score: ${String(review.review_score ?? 0)}`,\n  String(review.review_reason ?? ''),\n  review.review_next_task\n    ? `Next: ${String(review.review_next_task)}`\n    : ''\n].filter(Boolean).join('\\n');\n\nreturn [{\n  json: {\n    ...review,\n    review_message: reviewMessage\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -6352,
+        1184
+      ],
+      "id": "b9326e57-3394-4ee2-a2a7-1cdb077a5f11",
+      "name": "Restore Review Notification Context"
+    },
+    {
+      "parameters": {
+        "jsCode": "function last(name) {\n  try {\n    const items = $(name).all();\n    return items.length ? items[items.length - 1].json : null;\n  } catch (_) {\n    return null;\n  }\n}\n\nconst failure = $json;\nconst current = last('Prepare Current Task');\nconst parsed = last('Parse Plan');\nconst saved = last('Load Task State');\nconst reviewerStart = last('Reviewer Start');\n\nconst tasks =\n  Array.isArray(current?.tasks) ? current.tasks :\n  Array.isArray(parsed?.tasks) ? parsed.tasks :\n  [];\n\nconst planSummary =\n  current?.plan_summary ??\n  parsed?.plan_summary ??\n  '';\n\nconst savedPlan = String(saved?.plan_json ?? '');\n\nreturn [{\n  json: {\n    ...failure,\n\n    failure_plan_json: tasks.length\n      ? JSON.stringify({\n          summary: String(planSummary),\n          tasks\n        })\n      : savedPlan,\n\n    failure_task_index: Number(\n      current?.task_index ??\n      saved?.task_index ??\n      0\n    ),\n\n    failure_task_attempt: Number(\n      current?.task_attempt ??\n      saved?.task_attempt ??\n      1\n    ),\n\n    failure_review_feedback: String(\n      current?.review_feedback ??\n      saved?.review_feedback ??\n      ''\n    ),\n\n    failure_last_review_score: Number(\n      current?.last_review_score ??\n      saved?.last_review_score ??\n      0\n    ),\n\n    failure_last_review_reason: String(\n      current?.last_review_reason ??\n      saved?.last_review_reason ??\n      failure.reason ??\n      ''\n    ),\n\n    failure_reviewer_run_id: String(\n      reviewerStart?.run_id ??\n      failure.reviewer_run_id ??\n      failure.run_id ??\n      ''\n    ),\n\n    failure_reviewer_session_id: String(\n      reviewerStart?.session_id ??\n      failure.reviewer_session_id ??\n      failure.session_id ??\n      ''\n    ),\n\n    failure_reviewer_status: String(\n      failure.reviewer_status ??\n      failure.status ??\n      ''\n    )\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3904,
+        3040
+      ],
+      "id": "17a1fb29-0770-43c9-b9d6-b0380e9e4999",
+      "name": "Prepare Workflow Failure Persistence"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Autonomous Agent Task State"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "state_key",
+              "keyValue": "={{$('Constants').first().json.state_namespace}}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "state_key": "={{$('Constants').first().json.state_namespace}}",
+            "plan_json": "={{ String($json.failure_plan_json ?? '') }}",
+            "task_index": "={{ Number($json.failure_task_index ?? 0) }}",
+            "task_attempt": "={{ Number($json.failure_task_attempt ?? 1) }}",
+            "status": "failed",
+            "review_feedback": "={{ String($json.failure_review_feedback ?? '') }}",
+            "last_review_score": "={{ Number($json.failure_last_review_score ?? 0) }}",
+            "last_review_reason": "={{ String($json.failure_last_review_reason ?? '') }}",
+            "updated_at": "={{ new Date().toISOString() }}",
+            "reviewer_run_id": "={{ String($json.failure_reviewer_run_id ?? '') }}",
+            "reviewer_status": "={{ String($json.failure_reviewer_status ?? '') }}",
+            "reviewer_session_id": "={{ String($json.failure_reviewer_session_id ?? '') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "state_key",
+              "displayName": "state_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "plan_json",
+              "displayName": "plan_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_index",
+              "displayName": "task_index",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_attempt",
+              "displayName": "task_attempt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "review_feedback",
+              "displayName": "review_feedback",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_review_score",
+              "displayName": "last_review_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_review_reason",
+              "displayName": "last_review_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_run_id",
+              "displayName": "reviewer_run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_status",
+              "displayName": "reviewer_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reviewer_session_id",
+              "displayName": "reviewer_session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -3696,
+        3040
+      ],
+      "id": "0c057cde-2b0b-42e5-9aee-b3666fff18e1",
+      "name": "Persist Workflow Failure State"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ...$('Failure Result').last().json } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3472,
+        3040
+      ],
+      "id": "b808d657-fd82-4c6c-8b30-bafdc59217e3",
+      "name": "Restore Workflow Failure Context"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "state-save-all-completed",
+              "leftValue": "={{$json.execution_route}}",
+              "rightValue": "all_tasks_completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -4992,
+        1360
+      ],
+      "id": "913d65ca-7e8b-46c5-bcce-be15a63d8f4d",
+      "name": "Task Completed After State Save?"
+    },
+    {
+      "parameters": {
+        "jsCode": "function unwrap(value) { const x = value?.json ?? value?.data ?? value ?? {}; return x && typeof x === 'object' && !Array.isArray(x) ? x : {}; }\nconst result = unwrap($json);\nconst status = String(result.status ?? '').toLowerCase();\nconst route = String(result.route ?? (status === 'completed' ? 'completed' : '')).toLowerCase();\nconst base=$('Reviewer State').isExecuted?$('Reviewer State').last().json:$('Restore Saved Task State').last().json;\nreturn [{json:{...base,reviewer_run_id:String(result.run_id??''),reviewer_session_id:String(result.session_id??base.reviewer_session_id??''),reviewer_status:status,reviewer_route:route,route: String(result.route ?? result.reviewer_route ?? ''),reviewer_output:String(result.output??result.response??result.content??''),reviewer_session_verified:Boolean(result.session_verified??false),reviewer_session_mismatch:Boolean(result.session_mismatch??false),error:String(result.error??''),error_code:String(result.error_code??'')}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -8528,
+        1936
+      ],
+      "id": "2562e80e-7c27-4a36-bfcd-95d983ceba43",
+      "name": "Save Reviewer Run Context"
+    },
+    {
+      "parameters": {
+        "jsCode": "const result=$json?.json??$json??{}; const base=$('Prepare Current Task').isExecuted?$('Prepare Current Task').last().json:$('Restore Saved Task State').last().json; return [{json:{...base,worker_run_id:String(result.run_id??''),worker_session_id:String(result.session_id??base.worker_session_id??''),worker_status:String(result.status??''),worker_route:String(result.route??''),worker_output:String(result.output??''),worker_session_verified:Boolean(result.session_verified??false),worker_session_mismatch:Boolean(result.session_mismatch??false),error:String(result.error??''),error_code:String(result.error_code??'')}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -10720,
+        2256
+      ],
+      "id": "55d8d1bf-e577-4a8d-b128-5dee4c848941",
+      "name": "Save Worker Run Context"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5dbf22c3-1db2-43bf-9d51-5b1af709021c",
+              "leftValue": "={{ String($json.reviewer_run_id ?? '') !== '' || String($json.reviewer_session_id ?? '') !== '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "730be2bd-8cd9-4e88-bab3-7e36cee16d4a",
+              "leftValue": "={{ String($json.reviewer_status ?? '') !== 'completed'}}",
+              "rightValue": "complete",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -12784,
+        1776
+      ],
+      "id": "7692ca44-c371-4650-a524-a5e4ff36ba07",
+      "name": "Resume Reviewer?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cb3c0b33-eac1-43f9-8609-2694087a1a6d",
+              "leftValue": "={{ String($json.worker_run_id ?? '') !== '' || String($json.worker_session_id ?? '') !== '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -11920,
+        1920
+      ],
+      "id": "400a77e7-f1b5-45c8-96b3-83b8548ef4d9",
+      "name": "Resume Worker?"
+    }
+  ],
+  "pinData": {
+    "When clicking ‘Execute workflow’": [
+      {
+        "json": {},
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get Mission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Architect Start": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Architect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Architect": {
+      "main": [
+        [
+          {
+            "node": "Architect Completed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Architect Completed?": {
+      "main": [
+        [
+          {
+            "node": "Parse Plan",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Failure Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Plan": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Current Task": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "All Tasks Completed?": {
+      "main": [
+        [
+          {
+            "node": "Approved Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Worker Start",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Worker Start": {
+      "main": [
+        [
+          {
+            "node": "Save Worker Run Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Worker": {
+      "main": [
+        [
+          {
+            "node": "Worker Completed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Worker Completed?": {
+      "main": [
+        [
+          {
+            "node": "Persist Worker Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Persist Worker Terminal State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reviewer Start": {
+      "main": [
+        [
+          {
+            "node": "Save Reviewer Run Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Reviewer": {
+      "main": [
+        [
+          {
+            "node": "Reviewer Completed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reviewer Completed?": {
+      "main": [
+        [
+          {
+            "node": "Persist Reviewer Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Persist Reviewer Terminal State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Review": {
+      "main": [
+        [
+          {
+            "node": "Persist Parsed Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Review Passed?": {
+      "main": [
+        [
+          {
+            "node": "Advance Task",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Retry Current Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Advance Task": {
+      "main": [
+        [
+          {
+            "node": "Persist Task Progress",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retry Current Task": {
+      "main": [
+        [
+          {
+            "node": "Persist Retry State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Continue Workflow?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Current Task",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Failure Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reviewer State": {
+      "main": [
+        [
+          {
+            "node": "Reviewer Start",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload from file": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message1": {
+      "main": [
+        [
+          {
+            "node": "Restore Task Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approved Result": {
+      "main": [
+        [
+          {
+            "node": "Send a text message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Parse Plan",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Architect Start",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Failure Result": {
+      "main": [
+        [
+          {
+            "node": "Prepare Workflow Failure Persistence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Restore Plan Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message3": {
+      "main": [
+        [
+          {
+            "node": "Restore Review Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Plan Context": {
+      "main": [
+        [
+          {
+            "node": "Persist Initial Task State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Task Context": {
+      "main": [
+        [
+          {
+            "node": "All Tasks Completed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Review Context": {
+      "main": [
+        [
+          {
+            "node": "Review Passed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ensure Task State Table": {
+      "main": [
+        [
+          {
+            "node": "Ensure Task Attempt History Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Task State": {
+      "main": [
+        [
+          {
+            "node": "Resume Saved State?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resume Saved State?": {
+      "main": [
+        [
+          {
+            "node": "Restore Saved Task State",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upload from file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Saved Task State": {
+      "main": [
+        [
+          {
+            "node": "Resume Reviewer?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Initial Task State": {
+      "main": [
+        [
+          {
+            "node": "Restore Plan After State Save",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Plan After State Save": {
+      "main": [
+        [
+          {
+            "node": "Prepare Current Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Task Progress": {
+      "main": [
+        [
+          {
+            "node": "Restore Task After State Save",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Task After State Save": {
+      "main": [
+        [
+          {
+            "node": "Task Completed After State Save?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ensure Task Attempt History Table": {
+      "main": [
+        [
+          {
+            "node": "Load Task State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Worker Result": {
+      "main": [
+        [
+          {
+            "node": "Restore Worker Result Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Worker Terminal State": {
+      "main": [
+        [
+          {
+            "node": "Restore Worker Non-Transient Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Reviewer Result": {
+      "main": [
+        [
+          {
+            "node": "Restore Reviewer Result Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Reviewer Terminal State": {
+      "main": [
+        [
+          {
+            "node": "Restore Reviewer Non-Transient Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Parsed Review": {
+      "main": [
+        [
+          {
+            "node": "Persist Reviewer State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Reviewer State": {
+      "main": [
+        [
+          {
+            "node": "Restore Review Notification Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Retry State": {
+      "main": [
+        [
+          {
+            "node": "Restore Retry State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Retry State": {
+      "main": [
+        [
+          {
+            "node": "Task Completed After State Save?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Worker Result Context": {
+      "main": [
+        [
+          {
+            "node": "Reviewer State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Worker Non-Transient Context": {
+      "main": [
+        [
+          {
+            "node": "Failure Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Reviewer Result Context": {
+      "main": [
+        [
+          {
+            "node": "Parse Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Reviewer Non-Transient Context": {
+      "main": [
+        [
+          {
+            "node": "Failure Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Review Notification Context": {
+      "main": [
+        [
+          {
+            "node": "Send a text message3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Workflow Failure Persistence": {
+      "main": [
+        [
+          {
+            "node": "Persist Workflow Failure State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Workflow Failure State": {
+      "main": [
+        [
+          {
+            "node": "Restore Workflow Failure Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Workflow Failure Context": {
+      "main": [
+        [
+          {
+            "node": "Send a text message4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Task Completed After State Save?": {
+      "main": [
+        [
+          {
+            "node": "Approved Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Continue Workflow?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Reviewer Run Context": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Reviewer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Worker Run Context": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Worker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resume Reviewer?": {
+      "main": [
+        [
+          {
+            "node": "Reviewer Start",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Resume Worker?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resume Worker?": {
+      "main": [
+        [
+          {
+            "node": "Worker Start",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Current Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Mission": {
+      "main": [
+        [
+          {
+            "node": "Mission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mission": {
+      "main": [
+        [
+          {
+            "node": "Load Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Config": {
+      "main": [
+        [
+          {
+            "node": "Constants",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Constants": {
+      "main": [
+        [
+          {
+            "node": "Load Prompts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Prompts": {
+      "main": [
+        [
+          {
+            "node": "Prompt Templates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prompt Templates": {
+      "main": [
+        [
+          {
+            "node": "Ensure Task State Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "5c9d1501-d21e-44e2-8de4-d03ed9234672",
+  "meta": {},
+  "nodeGroups": [],
+  "id": "ouRYVceiY5G0NMv9",
+  "tags": []
+}
