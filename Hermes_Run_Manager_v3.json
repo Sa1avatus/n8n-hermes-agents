@@ -1,0 +1,1791 @@
+{
+  "name": "Hermes Run Manager v3",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "role"
+            },
+            {
+              "name": "run_id"
+            },
+            {
+              "name": "session_id"
+            },
+            {
+              "name": "input"
+            },
+            {
+              "name": "resume_input"
+            },
+            {
+              "name": "model"
+            },
+            {
+              "name": "provider"
+            },
+            {
+              "name": "poll_seconds",
+              "type": "number"
+            },
+            {
+              "name": "max_polls",
+              "type": "number"
+            },
+            {
+              "name": "max_retries",
+              "type": "number"
+            },
+            {
+              "name": "retry_count",
+              "type": "number"
+            },
+            {
+              "name": "retry_delays"
+            },
+            {
+              "name": "state_key"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -2752,
+        -192
+      ],
+      "id": "1cfa1c4d-9cc6-4d7f-b7ea-0861ff972f30",
+      "name": "When Executed by Parent Workflow"
+    },
+    {
+      "parameters": {
+        "jsCode": "const i = $json ?? {};\nconst state = {\n  role: String(i.role ?? 'generic'),\n  state_key: String(i.state_key ?? '').trim(),\n  run_id: String(i.run_id ?? '').trim(),\n  session_id: String(i.session_id ?? '').trim(),\n  requested_session_id: String(i.session_id ?? '').trim(),\n  model: String(i.model ?? '').trim(),\n  provider: String(i.provider ?? '').trim(),\n  input: String(i.input ?? ''),\n  resume_input: String(i.resume_input ?? ''),\n  poll_seconds: Math.max(1, Number(i.poll_seconds ?? 3)),\n  max_polls: Math.max(1, Number(i.max_polls ?? 40)),\n  poll_count: 0,\n  max_retries: Math.max(0, Number(i.max_retries ?? 3)),\n  retry_count: Math.max(0, Number(i.retry_count ?? 0)),\n  retry_delays: (() => {\n  const raw = i.retry_delays;\n\n  if (Array.isArray(raw)) {\n    return raw.map(Number).filter(Number.isFinite);\n  }\n\n  if (typeof raw === 'string' && raw.trim()) {\n    try {\n      const parsed = JSON.parse(raw);\n      if (Array.isArray(parsed)) {\n        return parsed.map(Number).filter(Number.isFinite);\n      }\n    } catch (_) {\n      // fallback below\n    }\n  }\n\n  return [15, 30, 60, 120, 300];\n})(),\n  retry_delay_seconds: 0,\n  status: '', route: '', output: '', error: '', error_code: '', http_code: null,\n  run_not_found: false, transient_error: false, resumed: false,\n  session_verified: !String(i.session_id ?? '').trim(), session_mismatch: false\n};\nif (!state.model) throw new Error('Hermes Run Manager: model is required.');\nif (!state.provider) throw new Error('Hermes Run Manager: provider is required.');\nif (!state.input && !state.resume_input && !state.run_id) throw new Error('Hermes Run Manager: input is required.');\nreturn [{ json: state }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2480,
+        -192
+      ],
+      "id": "457f0ed2-550d-48a0-b84a-01fea63ef593",
+      "name": "Normalize Request"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8642/v1/runs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Hermes-Session-Id",
+              "value": "={{ String($json.session_id ?? $json.requested_session_id ?? '').trim() }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  input: String($json.input || $json.resume_input || ''),\n  model: String($json.model ?? ''),\n  provider: String($json.provider ?? ''),\n  ...(String($json.session_id ?? $json.requested_session_id ?? '').trim()\n    ? { session_id: String($json.session_id ?? $json.requested_session_id ?? '').trim() }\n    : {})\n} }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -2064,
+        -176
+      ],
+      "id": "f85504eb-5348-445c-99dd-d6e334536b4d",
+      "name": "Start / Resume Run",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "6uSekyq2KfsNjvFJ",
+          "name": "Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const postStarted = $('Start / Resume Run').isExecuted;\nconst postResumed = $('Resume Existing Session').isExecuted;\nif (!postStarted && !postResumed) {\n  const existingRun = String($json.run_id ?? '').trim();\n  return [{ json: { ...$json, run_id: existingRun, route: existingRun ? 'running' : 'start_error', error: existingRun ? String($json.error ?? '') : 'Hermes run_id is empty; status request was skipped.', error_code: existingRun ? String($json.error_code ?? '') : 'run_id_missing' } }];\n}\nconst base = postResumed ? $('Evaluate Status').last().json : $('Normalize Request').last().json;\nconst raw = $json?.body ?? $json?.data ?? $json;\nconst resumedSession = postResumed && String($('Evaluate Status').last().json.route ?? '') === 'restart_session';\nreturn [{ json: validate(postResumed ? { ...base, poll_count: 0, run_id: '' } : base, raw, resumedSession) }];\nfunction parse(value) {\n  if (typeof value !== 'string') return value && typeof value === 'object' ? value : {};\n  try { return JSON.parse(value); } catch (_) { return { error: value }; }\n}\nfunction errorOf(r) {\n  const raw = r.error ?? r.message ?? '';\n  const text = typeof raw === 'string' ? raw : String(raw?.message ?? r.details ?? '');\n  const code = String(typeof raw === 'object' && raw ? (raw.code ?? r.code ?? '') : (r.code ?? '')).toLowerCase();\n  return { text, code };\n}\nfunction validate(prior, response, resumed) {\n  const r = parse(response);\n  const err = errorOf(r);\n  const returnedRun = String(r.run_id ?? '').trim();\n  const returnedSession = String(r.session_id ?? r.sessionId ?? (typeof r.session === 'string' ? r.session : (r.session?.session_id ?? r.session?.id ?? ''))).trim();\n  const requested = String(prior.requested_session_id ?? '').trim();\n  const mismatch = Boolean(requested && returnedSession && requested !== returnedSession);\n  if (mismatch) return { ...prior, run_id: '', session_id: requested, status: 'failed', route: 'session_mismatch', output: '', error: `Hermes returned session_id ${returnedSession}, expected ${requested}.`, error_code: 'session_mismatch', session_verified: false, session_mismatch: true };\n  if (!returnedRun) return { ...prior, run_id: '', session_id: returnedSession || requested, status: 'failed', route: 'start_error', output: '', error: err.text || 'Hermes did not return run_id.', error_code: err.code || 'run_start_failed', session_verified: false, session_mismatch: false };\n  return { ...prior, run_id: returnedRun, session_id: returnedSession || requested, status: String(r.status ?? 'started').toLowerCase(), route: 'running', output: String(r.output ?? r.response ?? r.content ?? ''), error: err.text, error_code: err.code, resumed: Boolean(resumed), session_verified: !requested || !returnedSession || returnedSession === requested, session_mismatch: false };\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1632,
+        -48
+      ],
+      "id": "d329e882-1fa7-46a7-b4ed-ef2213618c2f",
+      "name": "Capture Run Response"
+    },
+    {
+      "parameters": {
+        "url": "={{ 'http://host.docker.internal:8642/v1/runs/' + String($json.run_id ?? '') }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": []
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1744,
+        208
+      ],
+      "id": "2c028447-3411-4c6d-9a27-f52b64ffdfcf",
+      "name": "Get Run Status",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "6uSekyq2KfsNjvFJ",
+          "name": "Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function parse(value) {\n  if (typeof value !== 'string') return value && typeof value === 'object' ? value : {};\n  try { return JSON.parse(value); } catch (_) { return { error: value }; }\n}\nfunction baseState() {\n  if ($('Evaluate Status').isExecuted) return $('Evaluate Status').last().json;\n  if ($('Capture Run Response').isExecuted) return $('Capture Run Response').last().json;\n  return $('Normalize Request').last().json;\n}\n\nconst envelope = $json ?? {};\nconst r = parse(envelope?.body ?? envelope?.data ?? envelope);\nconst prior = baseState();\nconst status = String(r.status ?? '').toLowerCase();\nconst raw = r.error ?? r.message ?? r.details ?? r.detail ?? '';\nconst errorText = typeof raw === 'string' ? raw : String(raw?.message ?? raw?.detail ?? r.details ?? '');\nconst errorCode = String(\n  typeof raw === 'object' && raw\n    ? (raw.code ?? r.code ?? '')\n    : (r.code ?? '')\n).toLowerCase();\nconst lower = errorText.toLowerCase();\n\nconst envelopeHttp = Number(\n  envelope.statusCode ?? envelope.status_code ?? envelope.httpCode ?? envelope.http_code ?? NaN\n);\nconst bodyHttp = Number(\n  r.statusCode ?? r.status_code ?? r.httpCode ?? r.http_code ?? NaN\n);\nconst match = errorText.match(/\\b(4\\d\\d|5\\d\\d)\\b/);\nconst httpCode = Number.isFinite(envelopeHttp) ? envelopeHttp\n  : Number.isFinite(bodyHttp) ? bodyHttp\n  : (match ? Number(match[1]) : null);\n\nconst runNotFound =\n  httpCode === 404 ||\n  errorCode === 'run_not_found' ||\n  errorCode === 'not_found' ||\n  lower.includes('run not found') ||\n  lower.includes('run_not_found');\n\nconst transientCodes = new Set([408,409,425,429,500,502,503,504,529]);\nconst transientWords = ['temporarily overloaded','upstream error','upstream request failed','service unavailable','overloaded','timeout','timed out','connection reset','connection refused','rate limit','too many requests'];\nconst transient = !runNotFound && status === 'failed' && (transientCodes.has(httpCode) || transientWords.some((x) => lower.includes(x)));\nconst polls = Number(prior.poll_count ?? 0) + 1;\n\nlet route = 'unknown';\nif (runNotFound) route = prior.requested_session_id ? 'restart_session' : 'start_new';\nelse if (status === 'completed') route = 'completed';\nelse if (status === 'cancelled' || status === 'canceled') route = 'cancelled';\nelse if (transient) route = 'transient_error';\nelse if (status === 'failed') route = 'permanent_failure';\nelse if (['running','started','queued','waiting_for_approval'].includes(status)) route = polls >= Number(prior.max_polls ?? 40) ? 'timeout' : 'running';\n\n// A stale run_id must never be persisted or passed to the next branch.\n// The session_id/requested_session_id is intentionally preserved so the next POST\n// can resume the Hermes session when possible.\nconst nextRunId = runNotFound ? '' : String(r.run_id ?? prior.run_id ?? '').trim();\nconst nextSessionId = String(r.session_id ?? prior.session_id ?? prior.requested_session_id ?? '').trim();\n\nreturn [{ json: {\n  ...prior,\n  run_id: nextRunId,\n  session_id: nextSessionId,\n  status,\n  output: String(r.output ?? r.response ?? r.content ?? ''),\n  error: errorText,\n  error_code: errorCode,\n  http_code: httpCode,\n  run_not_found: runNotFound,\n  transient_error: transient,\n  poll_count: polls,\n  route\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1632,
+        96
+      ],
+      "id": "8df4f851-f8e2-4ed2-90e5-7f3971695b8d",
+      "name": "Evaluate Status"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "route-restart",
+              "leftValue": "={{ String($json.route ?? '') }}",
+              "rightValue": "restart_session",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "route-new",
+              "leftValue": "={{ String($json.route ?? '') }}",
+              "rightValue": "start_new",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -688,
+        96
+      ],
+      "id": "70a29ffb-13df-4c00-85ba-35a834d60c3f",
+      "name": "Run Missing?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8642/v1/runs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Hermes-Session-Id",
+              "value": "={{ $json.route === 'restart_session' ? String($json.requested_session_id ?? '') : '' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ (() => {\n  const resume = String($json.route ?? '') === 'restart_session';\n  const s = resume ? String($json.requested_session_id ?? '').trim() : '';\n  const p = {\n    input: resume\n      ? String($json.resume_input || $json.input || '')\n      : String($json.input || ''),\n    model: String($json.model),\n    provider: String($json.provider)\n  };\n  if (s) p.session_id = s;\n  return p;\n})() }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -80,
+        80
+      ],
+      "id": "1d3c6b49-ddbb-408d-9b34-3442807ea1f8",
+      "name": "Resume Existing Session",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "6uSekyq2KfsNjvFJ",
+          "name": "Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0d4914fd-cdea-4713-9b3a-649031face66",
+              "leftValue": "={{ String($json.route ?? '') }}",
+              "rightValue": "completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -384,
+        -48
+      ],
+      "id": "24f126e8-3ee3-49e2-8714-66a289b816cd",
+      "name": "Completed?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "9c22b4d4-feab-4c7f-a5ed-bc59cdd6d2b7",
+              "leftValue": "={{ String($json.route ?? '') }}",
+              "rightValue": "transient_error",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        64,
+        -32
+      ],
+      "id": "7fd46ad6-bcca-47a3-bbb2-7254bc35c57f",
+      "name": "Transient Error?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const retries=Number($json.retry_count??0);\nconst max=Number($json.max_retries??3);\nconst delays=Array.isArray($json.retry_delays)?$json.retry_delays: [15,30,60,120,300];\nif(retries>=max) return [{json:{...$json,retry_exhausted:true,route:'provider_unavailable',\nfinal_status:'failed_provider_unavailable',failure_reason:`Provider remained unavailable after ${max} retries.`}}];\nconst next=retries+1;\nreturn [{json:{...$json,retry_count:next,retry_delay_seconds:Number(delays[Math.min(next-1,delays.length-1)]??30),retry_exhausted:false}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        336,
+        -240
+      ],
+      "id": "f2fa3223-b5e2-406d-bcf4-d06a628307f0",
+      "name": "Retry Controller"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "057b3ec9-b894-4490-9251-6154ed4f5840",
+              "leftValue": "={{ Boolean($json.retry_exhausted ?? false) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "name": "filter.operator.true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        544,
+        -240
+      ],
+      "id": "696fe402-91c0-4176-802b-c3799c990b9f",
+      "name": "Retry Exhausted?"
+    },
+    {
+      "parameters": {
+        "amount": "={{ Number($json.retry_delay_seconds ?? 15) }}"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        864,
+        -112
+      ],
+      "id": "5ea4bc02-dfda-4f24-a01b-7f2a9d02692a",
+      "name": "Retry Wait",
+      "webhookId": "6f3b997d-b774-4f7e-bad6-55a4634aa8d4"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5bc6fc8c-19d1-4fc7-8ab2-22ce1a40bb3f",
+              "leftValue": "={{ String($json.route ?? '') }}",
+              "rightValue": "running",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "04a59309-54f2-4458-b725-ae931b7b1b71",
+              "leftValue": "={{ String($json.route ?? '') }}",
+              "rightValue": "timeout",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        368,
+        80
+      ],
+      "id": "c6d27dac-c573-4517-a469-d64fe04da19d",
+      "name": "Still Running?"
+    },
+    {
+      "parameters": {
+        "amount": "={{ Number($json.poll_seconds ?? 3) }}"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        704,
+        96
+      ],
+      "id": "eec57cb9-25cf-4ffc-a32f-808161237ce1",
+      "name": "Poll Wait",
+      "webhookId": "4f7ceb6a-8865-4eb2-a19b-23695bd2202e"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { role: String($json.role ?? ''), run_id: String($json.run_id ?? ''), session_id: String($json.session_id ?? ''), status: String($json.status ?? ''), route: String($json.route ?? ''), output: String($json.output ?? ''), error: String($json.error ?? ''), error_code: String($json.error_code ?? ''), http_code: $json.http_code ?? null, poll_count: Number($json.poll_count ?? 0), retry_count: Number($json.retry_count ?? 0), run_not_found: Boolean($json.run_not_found ?? false), resumed: Boolean($json.resumed ?? false), session_verified: Boolean($json.session_verified ?? false), session_mismatch: Boolean($json.session_mismatch ?? false), final_status: String($json.final_status ?? ($json.route === 'completed' ? 'completed' : $json.route)), retry_exhausted: Boolean($json.retry_exhausted ?? false), failure_reason: String($json.failure_reason ?? '') } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1744,
+        -320
+      ],
+      "id": "4154d4d4-eadf-483a-8c65-25ac34378a88",
+      "name": "Build Result"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "Yn9lOhVhQ9gFymNs",
+          "mode": "list",
+          "cachedResultName": "Autonomous Agent Task State",
+          "cachedResultUrl": "/projects/lkeKbYsk8F0BLGrz/datatables/Yn9lOhVhQ9gFymNs"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "state_key",
+              "keyValue": "={{ String($json.state_key ?? '') }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "state_key": "={{ String($json.state_key ?? '') }}",
+            "plan_json": "={{ String($json.plan_json ?? '') }}",
+            "task_index": "={{ Number($json.task_index ?? 0) }}",
+            "task_attempt": "={{ Number($json.task_attempt ?? 1) }}",
+            "status": "={{ String($json.status ?? 'active') }}",
+            "review_feedback": "={{ String($json.review_feedback ?? '') }}",
+            "last_review_score": "={{ Number($json.last_review_score ?? 0) }}",
+            "last_review_reason": "={{ String($json.last_review_reason ?? '') }}",
+            "updated_at": "={{ new Date().toISOString() }}",
+            "reviewer_run_id": "={{ String($json.reviewer_run_id ?? '') }}",
+            "reviewer_status": "={{ String($json.reviewer_status ?? '') }}",
+            "reviewer_session_id": "={{ String($json.reviewer_session_id ?? '') }}",
+            "worker_run_id": "={{ String($json.worker_run_id ?? '') }}",
+            "worker_status": "={{ String($json.worker_status ?? '') }}",
+            "worker_session_id": "={{ String($json.worker_session_id ?? '') }}",
+            "architect_run_id": "={{ String($json.architect_run_id ?? '') }}",
+            "architect_status": "={{ String($json.architect_status ?? '') }}",
+            "architect_session_id": "={{ String($json.architect_session_id ?? '') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "state_key",
+              "displayName": "state_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "plan_json",
+              "displayName": "plan_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "task_index",
+              "displayName": "task_index",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "number"
+            },
+            {
+              "id": "task_attempt",
+              "displayName": "task_attempt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "number"
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "review_feedback",
+              "displayName": "review_feedback",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "last_review_score",
+              "displayName": "last_review_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "number"
+            },
+            {
+              "id": "last_review_reason",
+              "displayName": "last_review_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "reviewer_run_id",
+              "displayName": "reviewer_run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "reviewer_status",
+              "displayName": "reviewer_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "reviewer_session_id",
+              "displayName": "reviewer_session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "worker_session_id",
+              "displayName": "worker_session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "worker_run_id",
+              "displayName": "worker_run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "worker_status",
+              "displayName": "worker_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "architect_run_id",
+              "displayName": "architect_run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "architect_status",
+              "displayName": "architect_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "architect_session_id",
+              "displayName": "architect_session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -864,
+        -48
+      ],
+      "id": "f0b96f6c-50f7-4286-8ab1-14dff8adab85",
+      "name": "Persist Agent State — Run Context"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Autonomous Agent Task State"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "state_key",
+              "keyValue": "={{ String($('Normalize Request').first().json.state_key ?? '') }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -1280,
+        -48
+      ],
+      "id": "583beed7-cb9a-4055-a90c-f85812a99a1f",
+      "name": "Load Task State — Run Context",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const saved = $('Load Task State — Run Context').first().json ?? {};\nconst result = $('Capture Run Response').last().json ?? {};\nconst request = $('Normalize Request').last().json ?? {};\n\nconst state = {\n  ...saved,\n  state_key: String(saved.state_key ?? request.state_key ?? ''),\n  plan_json: String(saved.plan_json ?? ''),\n  task_index: Number(saved.task_index ?? 0),\n  task_attempt: Number(saved.task_attempt ?? 1),\n  status: String(saved.status ?? 'active'),\n  review_feedback: String(saved.review_feedback ?? ''),\n  last_review_score: Number(saved.last_review_score ?? 0),\n  last_review_reason: String(saved.last_review_reason ?? ''),\n  reviewer_run_id: String(saved.reviewer_run_id ?? ''),\n  reviewer_status: String(saved.reviewer_status ?? ''),\n  reviewer_session_id: String(saved.reviewer_session_id ?? ''),\n  worker_run_id: String(saved.worker_run_id ?? ''),\n  worker_status: String(saved.worker_status ?? ''),\n  worker_session_id: String(saved.worker_session_id ?? ''),\n  architect_run_id: String(saved.architect_run_id ?? ''),\n  architect_status: String(saved.architect_status ?? ''),\n  architect_session_id: String(saved.architect_session_id ?? '')\n};\n\nconst role = String(result.role ?? request.role ?? '').toLowerCase();\nconst runId = String(result.run_id ?? '').trim();\nconst sessionId = String(result.session_id ?? '').trim();\nconst status = String(result.status ?? '').trim();\nconst route = String(result.route ?? '').trim();\nconst clearingStaleRun = route === 'restart_session' || route === 'start_new';\n\nif (role === 'worker') {\n  state.worker_run_id = clearingStaleRun ? '' : (runId || state.worker_run_id);\n  if (sessionId) state.worker_session_id = sessionId;\n  if (status) state.worker_status = status;\n}\nif (role === 'reviewer') {\n  state.reviewer_run_id = clearingStaleRun ? '' : (runId || state.reviewer_run_id);\n  if (sessionId) state.reviewer_session_id = sessionId;\n  if (status) state.reviewer_status = status;\n}\nif (role === 'architect') {\n  state.architect_run_id = clearingStaleRun ? '' : (runId || state.architect_run_id);\n  if (sessionId) state.architect_session_id = sessionId;\n  if (status) state.architect_status = status;\n}\n\nreturn [{json: state}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1056,
+        -48
+      ],
+      "id": "bca335dd-089b-4ff1-88ec-cb98520e8e75",
+      "name": "Build Persist State — Run Context"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Autonomous Agent Task State"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "state_key",
+              "keyValue": "={{ String($('Normalize Request').first().json.state_key ?? '') }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -1456,
+        96
+      ],
+      "id": "f7c85a1c-8cc7-4bc5-9c1d-680bc33ef350",
+      "name": "Load Task State — Status",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const saved = $('Load Task State — Status').first().json ?? {};\nconst result = $('Evaluate Status').last().json ?? {};\nconst request = $('Normalize Request').last().json ?? {};\n\nconst route = String(result.route ?? '').trim();\nconst clearingStaleRun = route === 'restart_session' || route === 'start_new';\n\nconst state = {\n  ...saved,\n  state_key: String(saved.state_key ?? request.state_key ?? ''),\n  plan_json: String(saved.plan_json ?? ''),\n  task_index: Number(saved.task_index ?? 0),\n  task_attempt: Number(saved.task_attempt ?? 1),\n  status: String(saved.status ?? 'active'),\n  review_feedback: String(saved.review_feedback ?? ''),\n  last_review_score: Number(saved.last_review_score ?? 0),\n  last_review_reason: String(saved.last_review_reason ?? ''),\n  reviewer_run_id: String(saved.reviewer_run_id ?? ''),\n  reviewer_status: String(saved.reviewer_status ?? ''),\n  reviewer_session_id: String(saved.reviewer_session_id ?? ''),\n  worker_run_id: String(saved.worker_run_id ?? ''),\n  worker_status: String(saved.worker_status ?? ''),\n  worker_session_id: String(saved.worker_session_id ?? ''),\n  architect_run_id: String(saved.architect_run_id ?? ''),\n  architect_status: String(saved.architect_status ?? ''),\n  architect_session_id: String(saved.architect_session_id ?? '')\n};\n\nconst role = String(result.role ?? request.role ?? '').toLowerCase();\nconst runId = String(result.run_id ?? '').trim();\nconst sessionId = String(result.session_id ?? '').trim();\nconst status = String(result.status ?? '').trim();\n\nif (role === 'worker') {\n  state.worker_run_id = clearingStaleRun ? '' : (runId || state.worker_run_id);\n  if (sessionId) state.worker_session_id = sessionId;\n  if (status) state.worker_status = status;\n}\nif (role === 'reviewer') {\n  state.reviewer_run_id = clearingStaleRun ? '' : (runId || state.reviewer_run_id);\n  if (sessionId) state.reviewer_session_id = sessionId;\n  if (status) state.reviewer_status = status;\n}\nif (role === 'architect') {\n  state.architect_run_id = clearingStaleRun ? '' : (runId || state.architect_run_id);\n  if (sessionId) state.architect_session_id = sessionId;\n  if (status) state.architect_status = status;\n}\n\nreturn [{json: state}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1264,
+        96
+      ],
+      "id": "79dac060-8ac3-43d8-b01a-6f90d5143252",
+      "name": "Build Persist State — Status"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "Yn9lOhVhQ9gFymNs",
+          "mode": "list",
+          "cachedResultName": "Autonomous Agent Task State",
+          "cachedResultUrl": "/projects/lkeKbYsk8F0BLGrz/datatables/Yn9lOhVhQ9gFymNs"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "state_key",
+              "keyValue": "={{ String($json.state_key ?? '') }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "state_key": "={{ String($json.state_key ?? '') }}",
+            "plan_json": "={{ String($json.plan_json ?? '') }}",
+            "task_index": "={{ Number($json.task_index ?? 0) }}",
+            "task_attempt": "={{ Number($json.task_attempt ?? 1) }}",
+            "status": "={{ String($json.status ?? 'active') }}",
+            "review_feedback": "={{ String($json.review_feedback ?? '') }}",
+            "last_review_score": "={{ Number($json.last_review_score ?? 0) }}",
+            "last_review_reason": "={{ String($json.last_review_reason ?? '') }}",
+            "updated_at": "={{ new Date().toISOString() }}",
+            "reviewer_run_id": "={{ String($json.reviewer_run_id ?? '') }}",
+            "reviewer_status": "={{ String($json.reviewer_status ?? '') }}",
+            "reviewer_session_id": "={{ String($json.reviewer_session_id ?? '') }}",
+            "worker_run_id": "={{ String($json.worker_run_id ?? '') }}",
+            "worker_status": "={{ String($json.worker_status ?? '') }}",
+            "worker_session_id": "={{ String($json.worker_session_id ?? '') }}",
+            "architect_run_id": "={{ String($json.architect_run_id ?? '') }}",
+            "architect_status": "={{ String($json.architect_status ?? '') }}",
+            "architect_session_id": "={{ String($json.architect_session_id ?? '') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "state_key",
+              "displayName": "state_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "plan_json",
+              "displayName": "plan_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "task_index",
+              "displayName": "task_index",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "number"
+            },
+            {
+              "id": "task_attempt",
+              "displayName": "task_attempt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "number"
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "review_feedback",
+              "displayName": "review_feedback",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "last_review_score",
+              "displayName": "last_review_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "number"
+            },
+            {
+              "id": "last_review_reason",
+              "displayName": "last_review_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "reviewer_run_id",
+              "displayName": "reviewer_run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "reviewer_status",
+              "displayName": "reviewer_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "reviewer_session_id",
+              "displayName": "reviewer_session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "worker_session_id",
+              "displayName": "worker_session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "worker_run_id",
+              "displayName": "worker_run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "worker_status",
+              "displayName": "worker_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "architect_run_id",
+              "displayName": "architect_run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "architect_status",
+              "displayName": "architect_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            },
+            {
+              "id": "architect_session_id",
+              "displayName": "architect_session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "readOnly": false,
+              "removed": false,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -1056,
+        96
+      ],
+      "id": "ac2327bb-5337-4c95-a774-c32ea888f5a6",
+      "name": "Persist Agent State — Status"
+    },
+    {
+      "parameters": {
+        "jsCode": "const persisted = $json ?? {};\nconst runner = $('Evaluate Status').last().json ?? {};\n\nreturn [{\n  json: {\n    ...persisted,\n\n    role: String(runner.role ?? ''),\n    run_id: String(runner.run_id ?? ''),\n    session_id: String(runner.session_id ?? ''),\n    requested_session_id: String(runner.requested_session_id ?? ''),\n\n    model: String(runner.model ?? ''),\n    provider: String(runner.provider ?? ''),\n    input: String(runner.input ?? ''),\n    resume_input: String(runner.resume_input ?? ''),\n\n    poll_seconds: Number(runner.poll_seconds ?? 3),\n    max_polls: Number(runner.max_polls ?? 40),\n    poll_count: Number(runner.poll_count ?? 0),\n\n    max_retries: Number(runner.max_retries ?? 3),\n    retry_count: Number(runner.retry_count ?? 0),\n    retry_delays: Array.isArray(runner.retry_delays)\n      ? runner.retry_delays\n      : [15, 30, 60, 120, 300],\n    retry_delay_seconds: Number(runner.retry_delay_seconds ?? 0),\n\n    status: String(runner.status ?? ''),\n    route: String(runner.route ?? ''),\n    output: String(runner.output ?? ''),\n    error: String(runner.error ?? ''),\n    error_code: String(runner.error_code ?? ''),\n    http_code: runner.http_code ?? null,\n\n    run_not_found: Boolean(runner.run_not_found ?? false),\n    transient_error: Boolean(runner.transient_error ?? false),\n    resumed: Boolean(runner.resumed ?? false),\n    session_verified: Boolean(runner.session_verified ?? false),\n    session_mismatch: Boolean(runner.session_mismatch ?? false)\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -864,
+        96
+      ],
+      "id": "2628caf7-a5d2-4e18-92af-00715e84e137",
+      "name": "Restore Runner State — Status"
+    },
+    {
+      "parameters": {
+        "jsCode": "const persisted = $json ?? {};\nconst runner = $('Capture Run Response').last().json ?? {};\n\nreturn [{\n  json: {\n    ...persisted,\n\n    role: String(runner.role ?? ''),\n    run_id: String(runner.run_id ?? ''),\n    session_id: String(runner.session_id ?? ''),\n    requested_session_id: String(runner.requested_session_id ?? ''),\n\n    model: String(runner.model ?? ''),\n    provider: String(runner.provider ?? ''),\n    input: String(runner.input ?? ''),\n    resume_input: String(runner.resume_input ?? ''),\n\n    poll_seconds: Number(runner.poll_seconds ?? 3),\n    max_polls: Number(runner.max_polls ?? 40),\n    poll_count: Number(runner.poll_count ?? 0),\n\n    max_retries: Number(runner.max_retries ?? 3),\n    retry_count: Number(runner.retry_count ?? 0),\n    retry_delays: Array.isArray(runner.retry_delays)\n      ? runner.retry_delays\n      : [15, 30, 60, 120, 300],\n    retry_delay_seconds: Number(runner.retry_delay_seconds ?? 0),\n\n    status: String(runner.status ?? ''),\n    route: String(runner.route ?? ''),\n    output: String(runner.output ?? ''),\n    error: String(runner.error ?? ''),\n    error_code: String(runner.error_code ?? ''),\n    http_code: runner.http_code ?? null,\n\n    run_not_found: Boolean(runner.run_not_found ?? false),\n    transient_error: Boolean(runner.transient_error ?? false),\n    resumed: Boolean(runner.resumed ?? false),\n    session_verified: Boolean(runner.session_verified ?? false),\n    session_mismatch: Boolean(runner.session_mismatch ?? false)\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -688,
+        -48
+      ],
+      "id": "5a1394f4-4a55-45c7-b5fa-85f7f76e53c7",
+      "name": "Restore Runner State — Run Context"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "03119681-7a77-4757-9619-1eae2560a164",
+              "leftValue": "={{ String($json.session_id ?? $json.requested_session_id ?? '').trim() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "name": "filter.operator.notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -2304,
+        -192
+      ],
+      "id": "9d9d0af0-c131-40c2-b7eb-86ea7b01c40d",
+      "name": "Has Session?"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ...$json, compression_target: 'start' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2080,
+        -416
+      ],
+      "id": "38602aa3-4828-4337-af58-0073c627abc5",
+      "name": "Mark Compression Target — Start"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ...$json, compression_target: 'resume' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -384,
+        96
+      ],
+      "id": "92e48acd-cea4-40ba-b706-c50ae2e862fd",
+      "name": "Mark Compression Target — Resume"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8642/v1/runs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Hermes-Session-Id",
+              "value": "={{ String($json.session_id ?? $json.requested_session_id ?? '').trim() }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { input: '/compress', model: String($json.model ?? ''), provider: String($json.provider ?? ''), session_id: String($json.session_id ?? $json.requested_session_id ?? '').trim() } }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -1824,
+        -416
+      ],
+      "id": "407f71e1-7574-4e8f-b48f-6bb064927ece",
+      "name": "Compress Session",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "6uSekyq2KfsNjvFJ",
+          "name": "Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function parse(value) {\n  if (typeof value !== 'string') {\n    return value && typeof value === 'object' ? value : {};\n  }\n  try { return JSON.parse(value); } catch (_) { return { error: value }; }\n}\n\nconst prior =\n  $('Mark Compression Target — Start').isExecuted\n    ? $('Mark Compression Target — Start').last().json\n    : $('Mark Compression Target — Resume').last().json;\n\nconst r = parse($json?.body ?? $json?.data ?? $json);\nconst raw = r.error ?? r.message ?? r.details ?? r.detail ?? '';\nconst errorText = typeof raw === 'string'\n  ? raw\n  : String(raw?.message ?? raw?.detail ?? r.details ?? '');\n\nconst runId = String(r.run_id ?? '').trim();\nconst sessionId = String(\n  r.session_id ??\n  r.sessionId ??\n  (typeof r.session === 'string' ? r.session : (r.session?.session_id ?? r.session?.id ?? ''))\n).trim();\n\nconst status = String(r.status ?? (runId ? 'started' : 'failed')).toLowerCase();\n\nreturn [{\n  json: {\n    ...prior,\n    compression_run_id: runId,\n    compression_session_id: sessionId || String(prior.session_id ?? prior.requested_session_id ?? '').trim(),\n    compression_status: status,\n    compression_error: errorText,\n    compression_output: String(r.output ?? r.response ?? r.content ?? ''),\n    compression_failed: !runId || ['failed', 'cancelled', 'canceled'].includes(status),\n    compression_completed: status === 'completed'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1552,
+        -416
+      ],
+      "id": "404702db-e91d-40f5-91d9-4731c7232990",
+      "name": "Evaluate Compression"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7f7e83a1-3f7f-43aa-a785-e7c3314c70f4",
+              "leftValue": "={{ Boolean($json.compression_failed ?? false) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "name": "filter.operator.true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1264,
+        -416
+      ],
+      "id": "e3a903f1-3ee9-4693-96ba-0644211e9fc6",
+      "name": "Compression Failed?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a978cafb-800c-44a6-9532-0a6e85f62031",
+              "leftValue": "={{ Boolean($json.compression_completed ?? false) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "name": "filter.operator.true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -992,
+        -336
+      ],
+      "id": "01699790-6a78-402a-b3e8-fcabcb3c9f34",
+      "name": "Compression Completed?"
+    },
+    {
+      "parameters": {
+        "amount": "={{ Number($json.poll_seconds ?? 3) }}"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -768,
+        -224
+      ],
+      "id": "1fb6e5fe-e83a-4413-83ee-a759bd7a913c",
+      "name": "Compression Wait",
+      "webhookId": "3f1eb6e9-d13f-421a-b0cc-10abc2bb3484"
+    },
+    {
+      "parameters": {
+        "url": "={{ 'http://host.docker.internal:8642/v1/runs/' + String($json.compression_run_id ?? '') }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": []
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -432,
+        -224
+      ],
+      "id": "a793663c-625f-443d-bec2-bf10aded5a58",
+      "name": "Get Compression Status",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "6uSekyq2KfsNjvFJ",
+          "name": "Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function parse(value) {\n  if (typeof value !== 'string') {\n    return value && typeof value === 'object' ? value : {};\n  }\n  try { return JSON.parse(value); } catch (_) { return { error: value }; }\n}\n\nconst prior = $('Compression Wait').last().json ?? {};\nconst envelope = $json ?? {};\nconst r = parse(envelope?.body ?? envelope?.data ?? envelope);\n\nconst raw = r.error ?? r.message ?? r.details ?? r.detail ?? '';\nconst errorText = typeof raw === 'string'\n  ? raw\n  : String(raw?.message ?? raw?.detail ?? r.details ?? '');\n\nconst status = String(r.status ?? '').toLowerCase();\n\nreturn [{\n  json: {\n    ...prior,\n    compression_status: status,\n    compression_error: errorText,\n    compression_output: String(r.output ?? r.response ?? r.content ?? ''),\n    compression_completed: status === 'completed',\n    compression_failed: ['failed', 'cancelled', 'canceled'].includes(status),\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -256,
+        -208
+      ],
+      "id": "ebb6de07-9d9c-4761-8c10-e1567ce04120",
+      "name": "Evaluate Compression Status"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d9e38e0c-6be2-4720-b97d-bea081d4709b",
+              "leftValue": "={{ String($json.compression_target ?? '') }}",
+              "rightValue": "resume",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -704,
+        -352
+      ],
+      "id": "ce68757c-abf8-4744-8c30-6ad41f242f56",
+      "name": "Compression Target?"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Parent Workflow": {
+      "main": [
+        [
+          {
+            "node": "Normalize Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Request": {
+      "main": [
+        [
+          {
+            "node": "Has Session?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start / Resume Run": {
+      "main": [
+        [
+          {
+            "node": "Capture Run Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Capture Run Response": {
+      "main": [
+        [
+          {
+            "node": "Load Task State — Run Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Run Status": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Status": {
+      "main": [
+        [
+          {
+            "node": "Load Task State — Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Missing?": {
+      "main": [
+        [
+          {
+            "node": "Mark Compression Target — Resume",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Completed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resume Existing Session": {
+      "main": [
+        [
+          {
+            "node": "Capture Run Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Completed?": {
+      "main": [
+        [
+          {
+            "node": "Build Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Transient Error?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transient Error?": {
+      "main": [
+        [
+          {
+            "node": "Retry Controller",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Still Running?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retry Controller": {
+      "main": [
+        [
+          {
+            "node": "Retry Exhausted?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retry Exhausted?": {
+      "main": [
+        [
+          {
+            "node": "Build Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Retry Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retry Wait": {
+      "main": [
+        [
+          {
+            "node": "Get Run Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Still Running?": {
+      "main": [
+        [
+          {
+            "node": "Poll Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll Wait": {
+      "main": [
+        [
+          {
+            "node": "Get Run Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Agent State — Run Context": {
+      "main": [
+        [
+          {
+            "node": "Restore Runner State — Run Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Task State — Run Context": {
+      "main": [
+        [
+          {
+            "node": "Build Persist State — Run Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Persist State — Run Context": {
+      "main": [
+        [
+          {
+            "node": "Persist Agent State — Run Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Task State — Status": {
+      "main": [
+        [
+          {
+            "node": "Build Persist State — Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Persist State — Status": {
+      "main": [
+        [
+          {
+            "node": "Persist Agent State — Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Agent State — Status": {
+      "main": [
+        [
+          {
+            "node": "Restore Runner State — Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Runner State — Status": {
+      "main": [
+        [
+          {
+            "node": "Run Missing?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Runner State — Run Context": {
+      "main": [
+        [
+          {
+            "node": "Completed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Session?": {
+      "main": [
+        [
+          {
+            "node": "Mark Compression Target — Start",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Start / Resume Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Compression Target — Start": {
+      "main": [
+        [
+          {
+            "node": "Compress Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Compression Target — Resume": {
+      "main": [
+        [
+          {
+            "node": "Compress Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compress Session": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Compression",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Compression": {
+      "main": [
+        [
+          {
+            "node": "Compression Failed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compression Failed?": {
+      "main": [
+        [
+          {
+            "node": "Build Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Compression Completed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compression Completed?": {
+      "main": [
+        [
+          {
+            "node": "Compression Target?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Compression Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compression Wait": {
+      "main": [
+        [
+          {
+            "node": "Get Compression Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Compression Status": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Compression Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Compression Status": {
+      "main": [
+        [
+          {
+            "node": "Compression Failed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compression Target?": {
+      "main": [
+        [
+          {
+            "node": "Resume Existing Session",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Start / Resume Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "0f4fb4a7-b34c-4c0d-9cfb-cd9a69a57924",
+  "meta": {
+    "instanceId": "e9629f9fcada0dc2525b3ec1f97ca9207b7e2aa614f2237017ccdcd0fddac54b"
+  },
+  "nodeGroups": [],
+  "id": "k6G9hlUpTK5eCBAK",
+  "tags": []
+}
