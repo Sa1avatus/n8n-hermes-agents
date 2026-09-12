@@ -60,7 +60,7 @@
           "value": "k6G9hlUpTK5eCBAK",
           "mode": "list",
           "cachedResultUrl": "/workflow/k6G9hlUpTK5eCBAK",
-          "cachedResultName": "Hermes Run Manager v1"
+          "cachedResultName": "Hermes Run Manager v3"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -77,7 +77,9 @@
             "run_id": "={{ String($json.architect_run_id ?? $('Restore Saved Task State').last().json.architect_run_id ?? '') }}",
             "session_id": "={{ String($json.architect_session_id ?? $('Restore Saved Task State').last().json.architect_session_id ?? '') }}",
             "state_key": "={{ $('Constants').first().json.state_namespace }}",
-            "resume_input": "Continue the existing Architect task from the saved Hermes session. Do not start over. Use the existing session context and return the complete result for the current task."
+            "resume_input": "Continue the existing Architect task from the saved Hermes session. Do not start over. Use the existing session context and return the complete result for the current task.",
+            "service_provider": "={{ $('Constants').first().json.service_provider }}",
+            "service_model": "={{ $('Constants').first().json.service_model }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -204,6 +206,26 @@
             {
               "id": "state_key",
               "displayName": "state_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "service_model",
+              "displayName": "service_model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "service_provider",
+              "displayName": "service_provider",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -357,7 +379,9 @@
             "max_retries": "={{ $('Constants').first().json.worker_max_provider_retries }}",
             "retry_count": 0,
             "retry_delays": "={{ $('Constants').first().json.retry_delays }}",
-            "state_key": "={{ $('Constants').first().json.state_namespace }}"
+            "state_key": "={{ $('Constants').first().json.state_namespace }}",
+            "service_provider": "={{ $('Constants').first().json.service_provider }}",
+            "service_model": "={{ $('Constants').first().json.service_model }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -484,6 +508,26 @@
             {
               "id": "state_key",
               "displayName": "state_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "service_model",
+              "displayName": "service_model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "service_provider",
+              "displayName": "service_provider",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -577,7 +621,9 @@
             "max_retries": "={{ $('Constants').first().json.reviewer_max_provider_retries }}",
             "retry_count": 0,
             "retry_delays": "={{ $('Constants').first().json.retry_delays }}",
-            "state_key": "={{ String($('Load Task State').first().json.state_key ?? $('Constants').first().json.state_namespace ?? '') }}"
+            "state_key": "={{ String($('Load Task State').first().json.state_key ?? $('Constants').first().json.state_namespace ?? '') }}",
+            "service_model": "={{ $('Constants').first().json.service_model }}",
+            "service_provider": "={{ $('Constants').first().json.service_provider }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -704,6 +750,26 @@
             {
               "id": "state_key",
               "displayName": "state_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "service_model",
+              "displayName": "service_model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "service_provider",
+              "displayName": "service_provider",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -969,7 +1035,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const rows = $('Load Config').all().map(item => item.json || {});\n\nconst row =\n  rows.find(\n    r =>\n      String(r.profile_id ?? '').trim() === 'default' &&\n      (r.enabled === true || String(r.enabled ?? '').toLowerCase() === 'true')\n  ) ||\n  rows[0];\n\nif (!row) {\n  throw new Error(\n    'No enabled default Hermes configuration found in Data Table hermes_config.'\n  );\n}\n\nfunction num(value, field, min = 0) {\n  const n = Number(value);\n\n  if (!Number.isFinite(n) || n < min) {\n    throw new Error(`Invalid ${field}: ${value}`);\n  }\n\n  return n;\n}\n\nlet retryDelays = [15, 30, 60, 120, 300];\n\nif (String(row.retry_delays_json ?? '').trim()) {\n  try {\n    const parsed = JSON.parse(String(row.retry_delays_json));\n\n    if (\n      !Array.isArray(parsed) ||\n      parsed.some(\n        v => !Number.isFinite(Number(v)) || Number(v) < 0\n      )\n    ) {\n      throw new Error(\n        'retry_delays_json must be a JSON array of non-negative numbers'\n      );\n    }\n\n    retryDelays = parsed.map(Number);\n  } catch (e) {\n    throw new Error(\n      `Invalid retry_delays_json: ${e.message}`\n    );\n  }\n}\n\n/*\n * state_namespace относится к Mission, а не к глобальному Hermes config.\n */\nconst mission = $('Mission').first()?.json ?? {};\n\nconst stateNamespace = String(\n  mission.state_namespace ?? ''\n).trim();\n\nif (!stateNamespace) {\n  throw new Error(\n    `Mission \"${String(\n      mission.mission_id ?? 'unknown'\n    )}\" does not define state_namespace.`\n  );\n}\n\nreturn [\n  {\n    json: {\n      planner_model: String(row.architect_model ?? '').trim(),\n      planner_provider: String(row.architect_provider ?? '').trim(),\n      worker_model: String(row.worker_model ?? '').trim(),\n      worker_provider: String(row.worker_provider ?? '').trim(),\n      reviewer_model: String(row.reviewer_model ?? '').trim(),\n      reviewer_provider: String(row.reviewer_provider ?? '').trim(),\n      max_tasks: num(row.max_tasks,'max_tasks',1),\n      max_attempts_per_task: num(row.max_attempts_per_task,'max_attempts_per_task',1),\n      architect_max_provider_retries: num(row.architect_max_retries,'architect_max_provider_retries',0),\n      worker_max_provider_retries: num(row.worker_max_retries,'worker_max_provider_retries',0),\n      reviewer_max_provider_retries: num(row.reviewer_max_retries,'reviewer_max_provider_retries',0),\n      architect_max_polls: num(row.architect_max_polls,'architect_max_polls',1),\n      worker_max_polls: num(row.worker_max_polls,'worker_max_polls',1),\n      reviewer_max_polls: num(row.reviewer_max_polls,'reviewer_max_polls',1),\n      architect_poll_seconds: num(row.architect_poll_seconds,'architect_poll_seconds',1),\n      worker_poll_seconds: num(row.worker_poll_seconds,'worker_poll_seconds',1),\n      reviewer_poll_seconds: num(row.reviewer_poll_seconds,'reviewer_poll_seconds',1),\n      telegram_chat_id: String(row.telegram_chat_id ?? '').trim(),\n      // ВАЖНО: теперь namespace берётся из Mission\n      state_namespace: stateNamespace,\n      // execution_mode остаётся глобальной настройкой профиля\n      execution_mode: String(row.execution_mode ?? 'production').trim(),\n      retry_delays: retryDelays\n    }\n  }\n];"
+        "jsCode": "const rows = $('Load Config').all().map(item => item.json || {});\n\nconst row =\n  rows.find(\n    r =>\n      String(r.profile_id ?? '').trim() === 'default' &&\n      (r.enabled === true || String(r.enabled ?? '').toLowerCase() === 'true')\n  ) ||\n  rows[0];\n\nif (!row) {\n  throw new Error(\n    'No enabled default Hermes configuration found in Data Table hermes_config.'\n  );\n}\n\nfunction num(value, field, min = 0) {\n  const n = Number(value);\n\n  if (!Number.isFinite(n) || n < min) {\n    throw new Error(`Invalid ${field}: ${value}`);\n  }\n\n  return n;\n}\n\nlet retryDelays = [15, 30, 60, 120, 300];\n\nif (String(row.retry_delays_json ?? '').trim()) {\n  try {\n    const parsed = JSON.parse(String(row.retry_delays_json));\n\n    if (\n      !Array.isArray(parsed) ||\n      parsed.some(\n        v => !Number.isFinite(Number(v)) || Number(v) < 0\n      )\n    ) {\n      throw new Error(\n        'retry_delays_json must be a JSON array of non-negative numbers'\n      );\n    }\n\n    retryDelays = parsed.map(Number);\n  } catch (e) {\n    throw new Error(\n      `Invalid retry_delays_json: ${e.message}`\n    );\n  }\n}\n\n/*\n * state_namespace относится к Mission, а не к глобальному Hermes config.\n */\nconst mission = $('Mission').first()?.json ?? {};\n\nconst stateNamespace = String(\n  mission.state_namespace ?? ''\n).trim();\n\nif (!stateNamespace) {\n  throw new Error(\n    `Mission \"${String(\n      mission.mission_id ?? 'unknown'\n    )}\" does not define state_namespace.`\n  );\n}\n\nreturn [\n  {\n    json: {\n      planner_model: String(row.architect_model ?? '').trim(),\n      planner_provider: String(row.architect_provider ?? '').trim(),\n      worker_model: String(row.worker_model ?? '').trim(),\n      worker_provider: String(row.worker_provider ?? '').trim(),\n      reviewer_model: String(row.reviewer_model ?? '').trim(),\n      reviewer_provider: String(row.reviewer_provider ?? '').trim(),\n      service_model: String(row.service_model ?? '').trim(),\n      service_provider: String(row.service_provider ?? '').trim(),\n      max_tasks: num(row.max_tasks,'max_tasks',1),\n      max_attempts_per_task: num(row.max_attempts_per_task,'max_attempts_per_task',1),\n      architect_max_provider_retries: num(row.architect_max_retries,'architect_max_provider_retries',0),\n      worker_max_provider_retries: num(row.worker_max_retries,'worker_max_provider_retries',0),\n      reviewer_max_provider_retries: num(row.reviewer_max_retries,'reviewer_max_provider_retries',0),\n      architect_max_polls: num(row.architect_max_polls,'architect_max_polls',1),\n      worker_max_polls: num(row.worker_max_polls,'worker_max_polls',1),\n      reviewer_max_polls: num(row.reviewer_max_polls,'reviewer_max_polls',1),\n      architect_poll_seconds: num(row.architect_poll_seconds,'architect_poll_seconds',1),\n      worker_poll_seconds: num(row.worker_poll_seconds,'worker_poll_seconds',1),\n      reviewer_poll_seconds: num(row.reviewer_poll_seconds,'reviewer_poll_seconds',1),\n      telegram_chat_id: String(row.telegram_chat_id ?? '').trim(),\n      // ВАЖНО: теперь namespace берётся из Mission\n      state_namespace: stateNamespace,\n      // execution_mode остаётся глобальной настройкой профиля\n      execution_mode: String(row.execution_mode ?? 'production').trim(),\n      retry_delays: retryDelays\n    }\n  }\n];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -2149,7 +2215,7 @@
           "mappingMode": "defineBelow",
           "value": {
             "state_key": "={{ $('Load Task State').first().json.state_key ?? $('Constants').first().json.state_namespace }}",
-            "task_id": "={{ String(\n  $('Prepare Current Task').isExecuted\n    ? $('Prepare Current Task').last().json.current_task_id\n    : (\n        $('Restore Saved Task State').last().json.tasks?.[\n          Number($('Restore Saved Task State').last().json.task_index ?? 0)\n        ]?.id ?? ''\n      )\n) }}",
+            "task_id": "={{ String(\n  $('Restore Saved Task State').first().json.tasks[\n    Number($('Restore Saved Task State').first().json.task_index ?? 0)\n  ].id ?? ''\n) }}",
             "task_index": "={{ Number(\n  $('Prepare Current Task').isExecuted\n    ? $('Prepare Current Task').last().json.task_index\n    : ($('Restore Saved Task State').last().json.task_index ?? 0)\n) }}",
             "task_attempt": "={{ Number(\n  $('Prepare Current Task').isExecuted\n    ? $('Prepare Current Task').last().json.task_attempt\n    : ($('Restore Saved Task State').last().json.task_attempt ?? 1)\n) }}",
             "event_type": "reviewer_completed",
@@ -3324,19 +3390,19 @@
           "conditions": [
             {
               "keyName": "state_key",
-              "keyValue": "={{ String($('Load Task State').first().json.state_key ?? $('Constants').first().json.state_namespace) }}"
+              "keyValue": "={{ String($json.state_key ?? '') }}"
             },
             {
               "keyName": "task_id",
-              "keyValue": "={{ String(JSON.parse($('Load Task State').first().json.plan_json).tasks[Number($('Load Task State').first().json.task_index ?? 0)]?.id ?? '') }}"
+              "keyValue": "={{ String($json.task_id ?? '') }}"
             },
             {
               "keyName": "task_attempt",
-              "keyValue": "={{ Number($('Load Task State').first().json.task_attempt ?? 1) }}"
+              "keyValue": "={{ Number($json.task_attempt ?? 1) }}"
             },
             {
               "keyName": "event_type",
-              "keyValue": "reviewer_completed"
+              "keyValue": "={{ String($json.event_type ?? '') }}"
             }
           ]
         },
@@ -4961,7 +5027,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "110152fa-84cb-4627-9953-21df7e6a0767",
+  "versionId": "13b74ce2-6c80-485a-8c9e-29e5d086bd28",
   "meta": {
     "instanceId": "e9629f9fcada0dc2525b3ec1f97ca9207b7e2aa614f2237017ccdcd0fddac54b"
   },
