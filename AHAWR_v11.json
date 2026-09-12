@@ -370,7 +370,7 @@
             "role": "worker",
             "run_id": "={{ String($json.worker_run_id ?? $('Restore Saved Task State').last().json.worker_run_id ?? '') }}",
             "session_id": "={{ String($json.worker_session_id ?? $('Restore Saved Task State').last().json.worker_session_id ?? '') }}",
-            "input": "={{ String($json.worker_prompt ?? '') }}",
+            "input": "={{ (() => {\n  const tasks = Array.isArray($json.tasks) ? $json.tasks : [];\n  const index = Number($json.task_index ?? 0);\n  const task = tasks[index];\n\n  if (!task) return '';\n\n  return [\n    $('Prompt Templates').first().json.worker_prompt ?? '',\n    '',\n    `TASK ${task.id}: ${task.title}`,\n    '',\n    'OBJECTIVE:',\n    String(task.objective ?? ''),\n    '',\n    'ACCEPTANCE CRITERIA:',\n    (task.acceptance_criteria ?? [])\n      .map((x, i) => `${i + 1}. ${x}`)\n      .join('\\n'),\n    '',\n    'VERIFICATION:',\n    (task.verification ?? []).join('\\n'),\n    '',\n    'SCOPE:',\n    (task.scope ?? []).join('\\n'),\n    '',\n    $json.review_feedback\n      ? 'PREVIOUS REVIEW FEEDBACK:\\n' + String($json.review_feedback)\n      : ''\n  ].filter(Boolean).join('\\n');\n})() }}",
             "resume_input": "Continue the existing Worker task from the saved Hermes session. Do not start over. Use the existing session context and return the complete result for the current task.",
             "model": "={{ $('Constants').first().json.worker_model }}",
             "provider": "={{ $('Constants').first().json.worker_provider }}",
@@ -612,7 +612,7 @@
             "role": "reviewer",
             "run_id": "={{ String($('Load Task State').first().json.reviewer_run_id ?? '') }}",
             "session_id": "={{ String($('Load Task State').first().json.reviewer_session_id ?? '') }}",
-            "input": "={{ (() => { const s=$('Load Task State').first().json; const plan=JSON.parse(String(s.plan_json ?? '{}')); const task=plan.tasks?.[Number(s.task_index ?? 0)] ?? {}; const w=$('Load Worker Result').first().json ?? {}; return [ $('Prompt Templates').first().json.reviewer_prompt, '', 'ORIGINAL GOAL:', $('Mission').first().json.original_goal, '', 'CURRENT TASK:', String(task.title ?? ''), '', 'OBJECTIVE:', String(task.objective ?? ''), '', 'ACCEPTANCE CRITERIA:', (task.acceptance_criteria ?? []).join('\\n'), '', 'VERIFICATION:', (task.verification ?? []).join('\\n'), '', 'SCOPE:', (task.scope ?? []).join('\\n'), '', 'WORKER RESULT:', String(w.worker_output ?? '') ].join('\\n'); })() }}",
+            "input": "={{ (() => {\n  const tasks = Array.isArray($json.tasks) ? $json.tasks : [];\n  const index = Number($json.task_index ?? 0);\n  const task = tasks[index] ?? {};\n\n  const workerOutput = String(\n    $json.worker_output ??\n    $('Load Worker Result').first().json.worker_output ??\n    ''\n  );\n\n  return [\n    $('Prompt Templates').first().json.reviewer_prompt ?? '',\n    '',\n    'ORIGINAL GOAL:',\n    String($('Mission').first().json.original_goal ?? ''),\n    '',\n    'CURRENT TASK:',\n    String(task.title ?? ''),\n    '',\n    'OBJECTIVE:',\n    String(task.objective ?? ''),\n    '',\n    'ACCEPTANCE CRITERIA:',\n    (task.acceptance_criteria ?? [])\n      .map((x, i) => `${i + 1}. ${x}`)\n      .join('\\n'),\n    '',\n    'VERIFICATION:',\n    (task.verification ?? []).join('\\n'),\n    '',\n    'SCOPE:',\n    (task.scope ?? []).join('\\n'),\n    '',\n    'WORKER RESULT:',\n    workerOutput\n  ].join('\\n');\n})() }}",
             "resume_input": "Continue the existing Reviewer task from the saved Hermes session. Do not start the review over. Use the existing session context and return only the required JSON acceptance result.",
             "model": "={{ $('Constants').first().json.reviewer_model }}",
             "provider": "={{ $('Constants').first().json.reviewer_provider }}",
@@ -5027,7 +5027,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "13b74ce2-6c80-485a-8c9e-29e5d086bd28",
+  "versionId": "57a00b85-e5ec-41eb-a8be-efeb8cf0730c",
   "meta": {
     "instanceId": "e9629f9fcada0dc2525b3ec1f97ca9207b7e2aa614f2237017ccdcd0fddac54b"
   },
