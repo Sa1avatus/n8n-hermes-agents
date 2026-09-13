@@ -1,5 +1,5 @@
 {
-  "name": "Hermes Run Manager v3",
+  "name": "Hermes Run Manager v4 fixed16",
   "nodes": [
     {
       "parameters": {
@@ -60,10 +60,10 @@
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        -2080,
-        -272
+        -8272,
+        -208
       ],
-      "id": "75bbc3d0-a28e-4a55-97c6-d3e74746b58a",
+      "id": "390ea286-31b7-451f-aa50-1da95f843786",
       "name": "When Executed by Parent Workflow"
     },
     {
@@ -73,10 +73,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1808,
-        -272
+        -8000,
+        -208
       ],
-      "id": "959cd980-01a6-463e-9a86-0bb65f1180ea",
+      "id": "890a930e-de26-4edc-8bb9-9902c14bace5",
       "name": "Normalize Request"
     },
     {
@@ -113,10 +113,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
       "position": [
-        -1392,
-        -256
+        -7024,
+        0
       ],
-      "id": "8c5ff19d-0441-4f5d-aede-9527397cd48c",
+      "id": "5d4ef22a-54f8-4d8d-930c-c479f6b407b1",
       "name": "Start / Resume Run",
       "credentials": {
         "httpBearerAuth": {
@@ -132,10 +132,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -960,
-        -128
+        -6752,
+        0
       ],
-      "id": "c04c902d-6df0-4197-9b4b-63a3f371f4dd",
+      "id": "cf773aaf-0199-4d03-8145-fef63e1461ac",
       "name": "Capture Run Response"
     },
     {
@@ -159,10 +159,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
       "position": [
-        2416,
-        128
+        -3376,
+        256
       ],
-      "id": "9656cdf0-9233-4525-85b0-424bb490511c",
+      "id": "312eaad6-0e81-4008-9217-f3c2572f966d",
       "name": "Get Run Status",
       "credentials": {
         "httpBearerAuth": {
@@ -178,10 +178,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -960,
-        16
+        -6752,
+        144
       ],
-      "id": "c263aa20-236e-4ed1-b783-5441f07f0531",
+      "id": "74b77eb4-bce9-4275-b27b-73b1b6778de8",
       "name": "Evaluate Status"
     },
     {
@@ -222,10 +222,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -16,
-        16
+        -5808,
+        144
       ],
-      "id": "0c693ac5-2833-4693-a90e-4821fbadbbfc",
+      "id": "d1a89b85-516c-4ee6-a2ed-730c0adcb1c2",
       "name": "Run Missing?"
     },
     {
@@ -262,10 +262,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
       "position": [
-        592,
-        0
+        -5200,
+        128
       ],
-      "id": "76cf853d-719b-4baa-8a57-096977007cc6",
+      "id": "47f3b17e-11e3-4e3d-a67d-c949f4f6309e",
       "name": "Resume Existing Session",
       "credentials": {
         "httpBearerAuth": {
@@ -302,10 +302,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        288,
-        -128
+        -5504,
+        0
       ],
-      "id": "a71907d0-c8c5-47c7-b88b-4d8d750da6b9",
+      "id": "817a0dbd-b47f-488a-b879-578e7e08a600",
       "name": "Completed?"
     },
     {
@@ -336,10 +336,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        736,
-        -112
+        -5056,
+        16
       ],
-      "id": "c53905f0-05ed-49d5-8a6a-bdf2ed9724c6",
+      "id": "00fe1268-e251-4bd1-824c-2d6c24fe1307",
       "name": "Transient Error?"
     },
     {
@@ -349,10 +349,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1008,
-        -320
+        -4784,
+        -192
       ],
-      "id": "58d3b5fb-c371-44d7-bf92-984290c7ab60",
+      "id": "eb3b0871-b6d5-48de-a49f-1fd3547046af",
       "name": "Retry Controller"
     },
     {
@@ -383,10 +383,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        1216,
-        -320
+        -4576,
+        -192
       ],
-      "id": "04b5fb5b-014c-4366-8d3f-23f5cce30adb",
+      "id": "2f039fe1-6310-4dcf-8cb5-45aa1beafe81",
       "name": "Retry Exhausted?"
     },
     {
@@ -396,10 +396,10 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        1536,
-        -192
+        -4256,
+        -64
       ],
-      "id": "33aeaa2d-d66b-4504-b77b-1161e2448e8b",
+      "id": "ae64cd02-1485-42a3-9659-28f679d12b8d",
       "name": "Retry Wait",
       "webhookId": "6f3b997d-b774-4f7e-bad6-55a4634aa8d4"
     },
@@ -441,10 +441,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        1040,
-        0
+        -4752,
+        128
       ],
-      "id": "a0128d3c-deef-42c8-b578-e2016d7865c1",
+      "id": "8f31452c-a76a-4f42-adf0-97a2b6d84521",
       "name": "Still Running?"
     },
     {
@@ -454,10 +454,10 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        1376,
-        16
+        -4416,
+        144
       ],
-      "id": "f9161ceb-49cc-420b-bd14-29dadb0f772b",
+      "id": "2cfed56b-cfe9-4f48-9e22-d220593c2650",
       "name": "Poll Wait",
       "webhookId": "4f7ceb6a-8865-4eb2-a19b-23695bd2202e"
     },
@@ -468,10 +468,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2416,
-        -400
+        -3376,
+        -272
       ],
-      "id": "40a5bbeb-ddb6-4493-ac02-a52e82d2054d",
+      "id": "412237f7-2a89-42d2-a306-bbf3358e06f3",
       "name": "Build Result"
     },
     {
@@ -706,10 +706,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -192,
-        -128
+        -5984,
+        0
       ],
-      "id": "8fc0cbea-4b03-4f38-bf91-99bd0ffaf8c2",
+      "id": "036948b0-4f7a-46b2-b751-25149008466c",
       "name": "Persist Agent State — Run Context"
     },
     {
@@ -734,10 +734,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -608,
-        -128
+        -6400,
+        0
       ],
-      "id": "98529627-bbc3-400f-9d64-7f27f1341809",
+      "id": "7c93a217-dd0a-4042-b838-2db8a581013a",
       "name": "Load Task State — Run Context",
       "alwaysOutputData": true
     },
@@ -748,10 +748,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -384,
-        -128
+        -6176,
+        0
       ],
-      "id": "528db7f7-0973-44f8-9d47-3beb0bb22b89",
+      "id": "02306fbc-c5ae-4bf3-868d-1993185ac4bf",
       "name": "Build Persist State — Run Context"
     },
     {
@@ -776,10 +776,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -784,
-        16
+        -6576,
+        144
       ],
-      "id": "a60d0dfa-5270-4211-9cb6-804bdfd4fa54",
+      "id": "f1169fc1-5cdd-4ea7-87b4-71f9ee7c88da",
       "name": "Load Task State — Status",
       "alwaysOutputData": true
     },
@@ -790,10 +790,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -592,
-        16
+        -6384,
+        144
       ],
-      "id": "1cc030ab-c84f-40b2-a08e-430272e72a0d",
+      "id": "f8fda670-8c2d-4088-a797-9d39a4cad545",
       "name": "Build Persist State — Status"
     },
     {
@@ -1028,10 +1028,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -384,
-        16
+        -6176,
+        144
       ],
-      "id": "e6dba2ff-e618-4f6d-bafe-59e6114d3f2b",
+      "id": "51283cd3-6243-4532-9819-526a65ae3eb4",
       "name": "Persist Agent State — Status"
     },
     {
@@ -1041,10 +1041,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -192,
-        16
+        -5984,
+        144
       ],
-      "id": "33b7f329-745b-4c48-b882-83315caa39e4",
+      "id": "da12455a-2408-43f0-810d-da38b969c4a9",
       "name": "Restore Runner State — Status"
     },
     {
@@ -1054,10 +1054,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -16,
-        -128
+        -5808,
+        0
       ],
-      "id": "6d796db8-d4b7-4a3f-944a-16257d41bada",
+      "id": "76e133d0-ba53-40af-a13d-d16ad649cbdb",
       "name": "Restore Runner State — Run Context"
     },
     {
@@ -1088,10 +1088,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -1632,
-        -272
+        -7824,
+        -208
       ],
-      "id": "1513812d-7211-4732-8265-aca8118689a6",
+      "id": "6e85a3c1-5038-4710-ad51-d6768d43cfb8",
       "name": "Has Session?"
     },
     {
@@ -1101,10 +1101,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1408,
-        -496
+        -7600,
+        -432
       ],
-      "id": "4116b25d-10aa-456f-9f74-66bf651b0103",
+      "id": "0d92e064-1458-4669-a4b2-678e6a10052d",
       "name": "Mark Compression Target — Start"
     },
     {
@@ -1114,69 +1114,36 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        288,
-        16
+        -5504,
+        144
       ],
-      "id": "1f0a2a4a-8980-4e80-b370-c3751dc47955",
+      "id": "aee3ce18-8f45-4729-a77b-999afcb78677",
       "name": "Mark Compression Target — Resume"
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "http://host.docker.internal:8642/v1/runs",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpBearerAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "X-Hermes-Session-Id",
-              "value": "={{ String($json.session_id ?? $json.requested_session_id ?? '').trim() }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ { input: '/compress', model: String($json.service_model ?? $json.model ?? ''), provider: String($json.service_provider ?? $json.provider ?? ''), session_id: String($json.session_id ?? $json.requested_session_id ?? '').trim() } }}",
-        "options": {
-          "response": {
-            "response": {
-              "neverError": true,
-              "responseFormat": "text"
-            }
-          }
-        }
+        "command": "={{ \"python3 -u /home/node/scripts/hermes_compress.py '\" + String($json.compression_payload ?? '') + \"' > /tmp/hermes_compress.stdout 2> /tmp/hermes_compress.stderr; rc=$?; echo '__HERMES_EXIT__='\" + String(rc) + \"; echo '__HERMES_STDOUT__'; cat /tmp/hermes_compress.stdout; echo '__HERMES_STDERR__'; cat /tmp/hermes_compress.stderr; exit 0\" }}"
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
       "position": [
-        -1152,
-        -496
+        -6432,
+        -432
       ],
-      "id": "fd862cf3-03f6-4b1e-863b-d0318085e4d3",
-      "name": "Compress Session",
-      "credentials": {
-        "httpBearerAuth": {
-          "id": "6uSekyq2KfsNjvFJ",
-          "name": "Bearer Auth account"
-        }
-      }
+      "id": "f7684902-4928-48e9-a2b7-edfea5ea290e",
+      "name": "Compress Session"
     },
     {
       "parameters": {
-        "jsCode": "function parse(value) {\n  if (typeof value !== 'string') {\n    return value && typeof value === 'object' ? value : {};\n  }\n  try { return JSON.parse(value); } catch (_) { return { error: value }; }\n}\n\nconst prior =\n  $('Mark Compression Target — Start').isExecuted\n    ? $('Mark Compression Target — Start').last().json\n    : $('Mark Compression Target — Resume').last().json;\n\nconst r = parse($json?.body ?? $json?.data ?? $json);\nconst raw = r.error ?? r.message ?? r.details ?? r.detail ?? '';\nconst errorText = typeof raw === 'string'\n  ? raw\n  : String(raw?.message ?? raw?.detail ?? r.details ?? '');\n\nconst runId = String(r.run_id ?? '').trim();\nconst sessionId = String(\n  r.session_id ??\n  r.sessionId ??\n  (typeof r.session === 'string' ? r.session : (r.session?.session_id ?? r.session?.id ?? ''))\n).trim();\n\nconst status = String(r.status ?? (runId ? 'started' : 'failed')).toLowerCase();\n\nreturn [{\n  json: {\n    ...prior,\n    compression_run_id: runId,\n    compression_session_id: sessionId || String(prior.session_id ?? prior.requested_session_id ?? '').trim(),\n    compression_status: status,\n    compression_error: errorText,\n    compression_output: String(r.output ?? r.response ?? r.content ?? ''),\n    compression_failed: !runId || ['failed', 'cancelled', 'canceled'].includes(status),\n    compression_completed: status === 'completed'\n  }\n}];"
+        "jsCode": "function clean(v) {\n  return v == null ? '' : String(v).trim();\n}\n\nfunction parseJsonLine(value) {\n  try {\n    return JSON.parse(value);\n  } catch (_) {\n    return null;\n  }\n}\n\nconst prior =\n  $('Mark Compression Target — Start').isExecuted\n    ? $('Mark Compression Target — Start').last().json\n    : $('Mark Compression Target — Resume').last().json;\n\nconst rawStdout = clean($json.stdout);\nconst rawStderr = clean($json.stderr);\n\n// Compress Session deliberately prints explicit markers so we can never lose\n// Python's stdout/stderr behind a shell-level exit code.\nlet pythonStdout = rawStdout;\nlet pythonStderr = rawStderr;\nlet pythonExit = Number($json.exitCode ?? $json.code ?? 0);\n\nconst exitMatch = rawStdout.match(/__HERMES_EXIT__=(\\d+)/);\nif (exitMatch) {\n  pythonExit = Number(exitMatch[1]);\n}\n\nconst stdoutMarker = '__HERMES_STDOUT__';\nconst stderrMarker = '__HERMES_STDERR__';\n\nconst stdoutPos = rawStdout.indexOf(stdoutMarker);\nconst stderrPos = rawStdout.indexOf(stderrMarker);\n\nif (stdoutPos >= 0) {\n  const afterStdout = rawStdout.slice(stdoutPos + stdoutMarker.length);\n  if (stderrPos >= 0 && stderrPos > stdoutPos) {\n    pythonStdout = afterStdout.slice(0, stderrPos - (stdoutPos + stdoutMarker.length)).trim();\n    pythonStderr = afterStdout.slice(stderrPos - (stdoutPos + stdoutMarker.length) + stderrMarker.length).trim();\n  } else {\n    pythonStdout = afterStdout.trim();\n  }\n}\n\nlet response = {};\nif (pythonStdout) {\n  const lines = pythonStdout\n    .split(/\\r?\\n/)\n    .map(x => x.trim())\n    .filter(Boolean);\n\n  for (let i = lines.length - 1; i >= 0; i--) {\n    const parsed = parseJsonLine(lines[i]);\n    if (parsed && typeof parsed === 'object') {\n      response = parsed;\n      break;\n    }\n  }\n}\n\nif (!Object.keys(response).length && pythonStderr) {\n  const lines = pythonStderr\n    .split(/\\r?\\n/)\n    .map(x => x.trim())\n    .filter(Boolean);\n\n  for (let i = lines.length - 1; i >= 0; i--) {\n    const parsed = parseJsonLine(lines[i]);\n    if (parsed && typeof parsed === 'object') {\n      response = parsed;\n      break;\n    }\n  }\n}\n\nconst responseError = clean(\n  response.error ??\n  response.message ??\n  response.details?.error\n);\n\nconst diagnostic =\n  responseError ||\n  pythonStderr ||\n  (pythonStdout && !Object.keys(response).length ? pythonStdout : '') ||\n  (pythonExit !== 0 ? `Compression process exited with code ${pythonExit}.` : '') ||\n  `Compression process returned no JSON. Raw n8n output: ${JSON.stringify($json)}`;\n\nconst status = clean(\n  response.compression_status ??\n  response.status\n).toLowerCase();\n\nconst commitStatus = clean(\n  response.commit_status\n).toLowerCase();\n\nconst failed =\n  Boolean(response.compression_failed) ||\n  pythonExit !== 0 ||\n  ['failed', 'aborted', 'cancelled', 'canceled'].includes(status) ||\n  ['failed', 'aborted'].includes(commitStatus);\n\nconst completed =\n  !failed &&\n  (\n    Boolean(response.compression_completed) ||\n    status === 'completed' ||\n    commitStatus === 'committed'\n  );\n\nconst targetedSession = clean(\n  prior.compression_target_session_id ??\n  prior.session_id ??\n  prior.requested_session_id\n);\n\nconst sessionId = targetedSession || clean(\n  response.compression_session_id ??\n  response.session_id ??\n  response.requested_session_id\n);\n\nreturn [{\n  json: {\n    ...prior,\n    compression_run_id: '',\n    compression_session_id: sessionId,\n    compression_target_session_id: sessionId,\n    compression_status: failed ? 'failed' : (completed ? 'completed' : status),\n    compression_error: diagnostic,\n    compression_output: clean(response.compression_output ?? response.output ?? pythonStdout),\n    compression_stdout: pythonStdout,\n    compression_stderr: pythonStderr,\n    compression_exit_code: pythonExit,\n    compression_response: response,\n    compression_failed: failed,\n    compression_completed: completed,\n    session_id: sessionId,\n    requested_session_id: sessionId,\n    run_id: '',\n  },\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -880,
-        -496
+        -6240,
+        -432
       ],
-      "id": "eb5ab74d-c882-4a09-8cce-3b8d33c718cd",
+      "id": "42dc7fbe-f7d5-405e-a276-bc6f60ab0a7a",
       "name": "Evaluate Compression"
     },
     {
@@ -1207,105 +1174,11 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -592,
-        -496
+        -6032,
+        -432
       ],
-      "id": "50872a30-6190-4855-bb22-9768b1df07cf",
+      "id": "fa1120c9-8be1-41cb-aa7e-abad0733deb6",
       "name": "Compression Failed?"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 3
-          },
-          "conditions": [
-            {
-              "id": "a978cafb-800c-44a6-9532-0a6e85f62031",
-              "leftValue": "={{ Boolean($json.compression_completed ?? false) }}",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "name": "filter.operator.true"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [
-        -320,
-        -416
-      ],
-      "id": "fc40760b-df1b-4019-a160-64d4abd1e86a",
-      "name": "Compression Completed?"
-    },
-    {
-      "parameters": {
-        "amount": "={{ Number($json.poll_seconds ?? 3) }}"
-      },
-      "type": "n8n-nodes-base.wait",
-      "typeVersion": 1.1,
-      "position": [
-        -96,
-        -304
-      ],
-      "id": "a744f4e2-314c-43c9-86fa-cdc57c30a511",
-      "name": "Compression Wait",
-      "webhookId": "3f1eb6e9-d13f-421a-b0cc-10abc2bb3484"
-    },
-    {
-      "parameters": {
-        "url": "={{ 'http://host.docker.internal:8642/v1/runs/' + String($json.compression_run_id ?? '') }}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpBearerAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": []
-        },
-        "options": {
-          "response": {
-            "response": {
-              "neverError": true,
-              "responseFormat": "text"
-            }
-          }
-        }
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
-      "position": [
-        240,
-        -304
-      ],
-      "id": "46b3adc2-7ba4-47a2-8a9f-77f7b7975921",
-      "name": "Get Compression Status",
-      "credentials": {
-        "httpBearerAuth": {
-          "id": "6uSekyq2KfsNjvFJ",
-          "name": "Bearer Auth account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "function parse(value) {\n  if (typeof value !== 'string') {\n    return value && typeof value === 'object' ? value : {};\n  }\n  try { return JSON.parse(value); } catch (_) { return { error: value }; }\n}\n\nconst prior = $('Compression Wait').last().json ?? {};\nconst envelope = $json ?? {};\nconst r = parse(envelope?.body ?? envelope?.data ?? envelope);\n\nconst raw = r.error ?? r.message ?? r.details ?? r.detail ?? '';\nconst errorText = typeof raw === 'string'\n  ? raw\n  : String(raw?.message ?? raw?.detail ?? r.details ?? '');\n\nconst status = String(r.status ?? '').toLowerCase();\n\nreturn [{\n  json: {\n    ...prior,\n    compression_status: status,\n    compression_error: errorText,\n    compression_output: String(r.output ?? r.response ?? r.content ?? ''),\n    compression_completed: status === 'completed',\n    compression_failed: ['failed', 'cancelled', 'canceled'].includes(status),\n  }\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        416,
-        -288
-      ],
-      "id": "08f0feb6-aeb7-4301-8535-a037f2eb6cd6",
-      "name": "Evaluate Compression Status"
     },
     {
       "parameters": {
@@ -1335,23 +1208,23 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -32,
-        -432
+        -5824,
+        -304
       ],
-      "id": "3908fb4e-e89d-48ac-a7f2-66ec82e96223",
+      "id": "1cd9a83e-3834-4054-b6d7-d31d54163028",
       "name": "Compression Target?"
     },
     {
       "parameters": {
-        "jsCode": "const previousSession = String($json.session_id ?? $json.requested_session_id ?? '').trim();\nconst reason = String($json.compression_error ?? 'Hermes compression failed.').trim();\nconst originalInput = String($json.input || $json.resume_input || '').trim();\n\nconst handoff = [\n  'SESSION HANDOFF — continue in a fresh Hermes session.',\n  '',\n  'The previous Hermes session could not be safely compressed, so continuation was moved to a new session.',\n  'Do NOT restart the task from scratch.',\n  'Preserve the existing task objective, constraints, progress and expected output format.',\n  '',\n  'PREVIOUS SESSION ID:',\n  previousSession || '(unknown)',\n  '',\n  'COMPRESSION FAILURE:',\n  reason || '(unknown)',\n  '',\n  'ORIGINAL TASK INPUT:',\n  originalInput || '(not available)',\n  '',\n  'CONTINUE:',\n  'Resume the task from the information above. Verify the current repository/workspace state before making changes.'\n].join('\\n');\n\nreturn [{ json: {\n  ...$json,\n  handoff_input: handoff,\n  handoff_from_session_id: previousSession,\n  compression_handoff: true,\n  run_id: '',\n  session_id: '',\n  requested_session_id: ''\n} }];"
+        "jsCode": "const current = $json ?? {};\nconst role = String(current.role ?? '').trim().toLowerCase();\nconst persisted = $('Load Task State — Run Context').isExecuted\n  ? ($('Load Task State — Run Context').first().json ?? {})\n  : {};\n\nfunction roleSession(state, roleName) {\n  if (roleName === 'worker') return String(state.worker_session_id ?? '').trim();\n  if (roleName === 'reviewer') return String(state.reviewer_session_id ?? '').trim();\n  if (roleName === 'architect') return String(state.architect_session_id ?? '').trim();\n  return '';\n}\n\nconst previousSession =\n  String(current.compression_target_session_id ?? '').trim() ||\n  roleSession(persisted, role) ||\n  String(current.session_id ?? current.requested_session_id ?? '').trim();\n\nconst reason = String(\n  current.compression_error ||\n  current.compression_stderr ||\n  current.compression_stdout ||\n  `Compression failed with exit code ${current.compression_exit_code ?? 'unknown'}.`\n).trim();\n\nconst handoff = [\n  'SESSION HANDOFF — continue in a fresh Hermes session.',\n  '',\n  'The previous Hermes session could not be safely compressed, so continuation was moved to a new session.',\n  'Do NOT restart the task from scratch.',\n  'Preserve the existing task objective, constraints, progress and expected output format.',\n  '',\n  'PREVIOUS SESSION ID:',\n  previousSession || '(not available)',\n  '',\n  'COMPRESSION FAILURE:',\n  reason,\n  '',\n  'ORIGINAL TASK INPUT:',\n  String(current.input || current.resume_input || '(not available)').trim(),\n  '',\n  'CONTINUE:',\n  'Resume the task from the information above. Verify the current repository/workspace state before making changes.',\n].join('\\n');\n\nreturn [{\n  json: {\n    ...current,\n    handoff_input: handoff,\n    handoff_from_session_id: previousSession,\n    compression_handoff: true,\n    run_id: '',\n    session_id: '',\n    requested_session_id: '',\n  },\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        32,
-        -720
+        -5744,
+        -704
       ],
-      "id": "2daecf33-e95e-47ea-b4fc-7f675855af67",
+      "id": "19a4c8a5-0c62-4b51-84cd-0eaa1f4612ef",
       "name": "Build Compression Handoff"
     },
     {
@@ -1384,10 +1257,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
       "position": [
-        272,
-        -720
+        -5520,
+        -704
       ],
-      "id": "bbb4c1cd-0e23-4ed2-90f9-89cbbbb5b3e7",
+      "id": "45e870b1-c41b-43c3-adde-9f635f2b9687",
       "name": "Start New Session from Handoff",
       "credentials": {
         "httpBearerAuth": {
@@ -1395,6 +1268,112 @@
           "name": "Bearer Auth account"
         }
       }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:9119/auth/password-login",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": true,
+              "fullResponse": true
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false,
+              "maxRedirects": 0
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -7072,
+        -432
+      ],
+      "id": "5b2dc58a-6cca-477b-b4ef-6d26be563f72",
+      "name": "Hermes Dashboard Login",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "R6rHaMQGEXI75Kuv",
+          "name": "Hermes Dashboard Login"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const login = $('Hermes Dashboard Login').last();\nconst response = login?.json ?? {};\n\n// n8n HTTP Request v4.5 with fullResponse=true returns:\n// { body, headers, statusCode, statusMessage }\nconst headers = response.headers ?? {};\n\nconst getHeader = (name) => {\n  const key = Object.keys(headers).find((k) => k.toLowerCase() === name.toLowerCase());\n  return key ? headers[key] : undefined;\n};\n\nconst rawSetCookie = getHeader('set-cookie');\nconst values = Array.isArray(rawSetCookie) ? rawSetCookie : [rawSetCookie];\nconst cookieParts = [];\n\nfor (const value of values) {\n  if (value == null) continue;\n  const text = String(value).trim();\n  if (!text) continue;\n  for (const part of text.split(/,(?=\\s*[^;,\\s=]+\\s*=)/g)) {\n    const cookie = part.split(';', 1)[0].trim();\n    if (cookie) cookieParts.push(cookie);\n  }\n}\n\nconst unique = new Map();\nfor (const cookie of cookieParts) {\n  const eq = cookie.indexOf('=');\n  if (eq <= 0) continue;\n  const name = cookie.slice(0, eq).trim();\n  const value = cookie.slice(eq + 1).trim();\n  if (name && value) unique.set(name, `${name}=${value}`);\n}\n\nconst hermes_cookie = [...unique.values()].join('; ');\n\nif (!hermes_cookie) {\n  throw new Error(\n    'Hermes Dashboard Login returned no usable Set-Cookie. ' +\n    `HTTP=${response.statusCode ?? 'unknown'} ` +\n    `Headers=${JSON.stringify(headers)} ` +\n    `Body=${JSON.stringify(response.body ?? null)}`\n  );\n}\n\nreturn [{\n  json: {\n    ...response,\n    hermes_cookie,\n  },\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -6848,
+        -432
+      ],
+      "id": "f3c4f650-f8c8-4409-9d51-2f3be0f6b517",
+      "name": "Extract Hermes Session Cookie"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:9119/api/auth/ws-ticket",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Cookie",
+              "value": "={{ String($json.hermes_cookie ?? \"\") }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -6624,
+        -432
+      ],
+      "id": "f652e4b4-5986-4870-9069-7e5d016fbf3f",
+      "name": "Get TUI WS Ticket"
+    },
+    {
+      "parameters": {
+        "jsCode": "const current = $json ?? {};\nconst role = String(current.role ?? '').trim().toLowerCase();\nconst target = $('Mark Compression Target — Start').isExecuted\n  ? $('Mark Compression Target — Start').last().json ?? {}\n  : ($('Mark Compression Target — Resume').last().json ?? {});\n\nconst persisted = $('Load Task State — Run Context').isExecuted\n  ? ($('Load Task State — Run Context').first().json ?? {})\n  : {};\n\nfunction roleSession(state, roleName) {\n  if (roleName === 'worker') return String(state.worker_session_id ?? '').trim();\n  if (roleName === 'reviewer') return String(state.reviewer_session_id ?? '').trim();\n  if (roleName === 'architect') return String(state.architect_session_id ?? '').trim();\n  return '';\n}\n\n// The role-specific session stored in Autonomous Agent Task State is authoritative.\n// Do not substitute a generic session_id from another branch/role.\nconst session_id =\n  roleSession(persisted, role) ||\n  roleSession(target, role) ||\n  String(target.session_id ?? target.requested_session_id ?? current.session_id ?? current.requested_session_id ?? '').trim();\n\nconst ticket = String(current.ticket ?? '').trim();\n\nif (!session_id) {\n  throw new Error(`Compress Session: session_id is missing for role=${role || 'unknown'}.`);\n}\n\nif (!ticket) {\n  throw new Error('Compress Session: WS ticket is missing.');\n}\n\nconst payload = {\n  session_id,\n  ticket,\n  keep_recent: 20,\n  timeout: 120,\n};\n\nconst compression_payload = Buffer\n  .from(JSON.stringify(payload), 'utf8')\n  .toString('base64');\n\nreturn [{\n  json: {\n    ...current,\n    compression_target_session_id: session_id,\n    session_id,\n    compression_payload,\n  },\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -6528,
+        -432
+      ],
+      "id": "b7c8c0d5-4e5d-4a6e-9f1a-2e7e8f6f1d11",
+      "name": "Build Compression Payload"
     }
   ],
   "pinData": {},
@@ -1709,7 +1688,7 @@
       "main": [
         [
           {
-            "node": "Compress Session",
+            "node": "Hermes Dashboard Login",
             "type": "main",
             "index": 0
           }
@@ -1720,18 +1699,7 @@
       "main": [
         [
           {
-            "node": "Compress Session",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Compress Session": {
-      "main": [
-        [
-          {
-            "node": "Evaluate Compression",
+            "node": "Hermes Dashboard Login",
             "type": "main",
             "index": 0
           }
@@ -1760,58 +1728,7 @@
         ],
         [
           {
-            "node": "Compression Completed?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Compression Completed?": {
-      "main": [
-        [
-          {
             "node": "Compression Target?",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Compression Wait",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Compression Wait": {
-      "main": [
-        [
-          {
-            "node": "Get Compression Status",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get Compression Status": {
-      "main": [
-        [
-          {
-            "node": "Evaluate Compression Status",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Evaluate Compression Status": {
-      "main": [
-        [
-          {
-            "node": "Compression Failed?",
             "type": "main",
             "index": 0
           }
@@ -1857,6 +1774,61 @@
           }
         ]
       ]
+    },
+    "Hermes Dashboard Login": {
+      "main": [
+        [
+          {
+            "node": "Extract Hermes Session Cookie",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Hermes Session Cookie": {
+      "main": [
+        [
+          {
+            "node": "Get TUI WS Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compress Session": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Compression",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get TUI WS Ticket": {
+      "main": [
+        [
+          {
+            "node": "Build Compression Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Compression Payload": {
+      "main": [
+        [
+          {
+            "node": "Compress Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
@@ -1864,7 +1836,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "7c29c86d-475c-475d-bbe5-fb0d926ac3ad",
+  "versionId": "2279709c-b620-4be7-9509-c2b4bb561376",
   "meta": {
     "instanceId": "e9629f9fcada0dc2525b3ec1f97ca9207b7e2aa614f2237017ccdcd0fddac54b"
   },

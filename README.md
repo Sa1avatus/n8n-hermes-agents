@@ -78,7 +78,7 @@ Its responsibilities include:
 
 The workflow is intentionally stateful. Task execution state is persisted using n8n Data Tables so that long-running asynchronous Hermes jobs do not have to exist only inside one transient execution.
 
-#### `Hermes_Run_Manager_v2.json`
+#### `Hermes_Run_Manager_v4.json`
 
 A reusable n8n sub-workflow that wraps Hermes Gateway operations.
 
@@ -305,7 +305,7 @@ The repository is expected to contain files similar to:
 ```text
 .
 ├── AHAWR_v11.json
-├── Hermes_Run_Manager_v2.json
+├── Hermes_Run_Manager_v4.json
 ├── hermes_config.csv
 ├── agent_prompts.csv
 ├── missions.csv
@@ -340,6 +340,8 @@ llama.cpp / other model provider
 ```
 
 The exact hostnames, ports, credentials and model names are deployment-specific and should be configured outside the workflow source when possible.
+
+For the current TUI compression transport, the n8n container reaches the Hermes WebSocket backend on port `9119`, while the normal Hermes HTTP run API remains deployment-specific.
 
 ### Installation
 
@@ -430,11 +432,11 @@ Hermes Gateway
 
 Models and providers are configured through the `hermes_config` Data Table.
 
-#### 7. Import `Hermes_Run_Manager_v2.json`
+#### 7. Import the current `Hermes_Run_Manager_v4.json`
 
 In n8n:
 
-1. Import `Hermes_Run_Manager_v2.json`.
+1. Import the current `Hermes_Run_Manager_v4.json`.
 2. Configure the required Hermes credentials.
 3. Run a simple test request.
 4. Confirm that Hermes can start a run and return a result.
@@ -484,7 +486,7 @@ Import:
 AHAWR_v11.json
 ```
 
-After importing, verify that the Execute Workflow nodes reference the imported `Hermes_Run_Manager_v2` workflow.
+After importing, verify that the Execute Workflow nodes reference the imported `Hermes_Run_Manager_v4` workflow.
 
 If n8n assigns a different workflow ID after import, update the corresponding references.
 
@@ -586,6 +588,66 @@ commit
 Keep the workflow JSON, prompt definitions, and non-secret configuration under version control.
 
 Keep runtime data, credentials, local model files, and temporary state outside Git.
+
+### Hermes session compression
+
+The Run Manager includes a dedicated Hermes TUI WebSocket compression path for long-running sessions. Compression is performed by `hermes_compress.py` through the Hermes WebSocket endpoint rather than through `/v1/runs`.
+
+The compression flow is:
+
+```text
+Hermes login
+   ↓
+WS ticket
+   ↓
+session.resume
+   ↓
+session.compress
+   ↓
+compression summary
+```
+
+The compression RPC receives the target `session_id`, a WS ticket, `keep_recent`, and a timeout. The model/provider are not passed by the n8n compression RPC itself; Hermes resolves the compression model from its own configuration.
+
+For the current Hermes configuration, configure a dedicated compression model explicitly:
+
+```yaml
+auxiliary:
+  compression:
+    provider: openrouter
+    model: openrouter/free
+```
+
+This keeps compression independent from the Architect/Worker/Reviewer model selection in `hermes_config`. The normal service model fields (`architect_model`, `worker_model`, `reviewer_model`) are not the compression model.
+
+The current deployment runs the Hermes backend used by n8n on port `9119`, for example:
+
+```bash
+hermes serve --host 0.0.0.0 --port 9119
+```
+
+After changing `~/.hermes/config.yaml`, restart the running `hermes serve` process so the new configuration is loaded. n8n itself does not need to be restarted solely because the Hermes YAML changed. Verify the startup output includes:
+
+```text
+HERMES_BACKEND_READY port=9119
+```
+
+The compression result should report the effective model/provider under its runtime information. A healthy configuration should show the explicitly configured compression route instead of an obsolete provider-specific default.
+
+The Run Manager also preserves role-specific session state (`architect_session_id`, `worker_session_id`, `reviewer_session_id`). Compression must receive the session selected by the compression-target path; it must not silently substitute the Architect session for a Worker or Reviewer session.
+
+### Compression troubleshooting
+
+If compression reports that no diagnostic output was returned, inspect the raw `stdout` from the Execute Command node. The wrapper may contain:
+
+```text
+__HERMES_EXIT__=...
+__HERMES_STDOUT__
+{JSON response from Hermes}
+__HERMES_STDERR__
+```
+
+The JSON between `__HERMES_STDOUT__` and `__HERMES_STDERR__` is the actual Hermes response. A compression result with `status: aborted`, `compression_failed: true`, `removed: 0`, and an error such as `Model ... is not supported` indicates a model/provider configuration problem, not a session-resume or WebSocket transport failure.
 
 ### Troubleshooting
 
@@ -731,7 +793,7 @@ AHAWR:
 - переход между задачами;
 - финальный результат.
 
-### `Hermes_Run_Manager_v2.json`
+### `Hermes_Run_Manager_v4.json`
 
 Это переиспользуемый sub-workflow для работы с Hermes Gateway.
 
@@ -924,7 +986,7 @@ hermes_config.csv
 agent_prompts.csv
 missions.csv
 AHAWR_v11.json
-Hermes_Run_Manager_v2.json
+Hermes_Run_Manager_v4.json
 ```
 
 Используйте:
@@ -953,7 +1015,7 @@ logs
 ```text
 .
 ├── AHAWR_v11.json
-├── Hermes_Run_Manager_v2.json
+├── Hermes_Run_Manager_v4.json
 ├── hermes_config.csv
 ├── agent_prompts.csv
 ├── missions.csv
@@ -1051,11 +1113,11 @@ Hermes Gateway
 
 Модели и provider задаются через таблицу `hermes_config`.
 
-#### 7. Импортировать `Hermes_Run_Manager_v2.json`
+#### 7. Импортировать `Hermes_Run_Manager_v4.json`
 
 В n8n:
 
-1. Импортируйте `Hermes_Run_Manager_v2.json`.
+1. Импортируйте `Hermes_Run_Manager_v4.json`.
 2. Настройте необходимые Hermes credentials.
 3. Выполните простой тестовый запрос.
 4. Убедитесь, что Hermes запускает run и возвращает результат.
@@ -1105,7 +1167,7 @@ state_namespace: test
 AHAWR_v11.json
 ```
 
-После импорта проверьте Execute Workflow nodes и убедитесь, что они вызывают импортированный `Hermes_Run_Manager_v2`.
+После импорта проверьте Execute Workflow nodes и убедитесь, что они вызывают импортированный `Hermes_Run_Manager_v4`.
 
 Если после импорта n8n назначил другой workflow ID, обновите соответствующие ссылки.
 
@@ -1175,6 +1237,52 @@ worker_provider
 в `hermes_config`.
 
 Для смены задачи достаточно изменить соответствующую запись в `missions`.
+
+### Компрессия Hermes-сессий
+
+Для длинных Worker/Reviewer-сессий Run Manager использует отдельный TUI WebSocket путь Hermes:
+
+```text
+login → WS ticket → session.resume → session.compress → summary
+```
+
+RPC компрессии передаёт `session_id`, WS ticket, `keep_recent` и timeout. `model` и `provider` в этот RPC напрямую из n8n не передаются: модель компрессии выбирается Hermes из собственной конфигурации.
+
+Для текущей конфигурации Hermes модель компрессии задаётся явно:
+
+```yaml
+auxiliary:
+  compression:
+    provider: openrouter
+    model: openrouter/free
+```
+
+Это отдельная настройка и она не совпадает с `architect_model`, `worker_model` или `reviewer_model` из `hermes_config`.
+
+Текущий backend Hermes, к которому подключается n8n для TUI-компрессии, запускается так:
+
+```bash
+hermes serve --host 0.0.0.0 --port 9119
+```
+
+После изменения `~/.hermes/config.yaml` необходимо полностью перезапустить именно этот процесс `hermes serve`, чтобы YAML был перечитан. Перезапуск n8n из-за изменения Hermes YAML не требуется. После запуска проверьте:
+
+```text
+HERMES_BACKEND_READY port=9119
+```
+
+В состоянии Run Manager хранятся отдельные `architect_session_id`, `worker_session_id` и `reviewer_session_id`. Компрессия должна работать с сессией выбранной текущим compression-target путём, а не автоматически брать сессию Architect.
+
+Если в `Execute Command` виден wrapper вида:
+
+```text
+__HERMES_EXIT__=...
+__HERMES_STDOUT__
+{...}
+__HERMES_STDERR__
+```
+
+JSON между `__HERMES_STDOUT__` и `__HERMES_STDERR__` является фактическим ответом Hermes. Ошибка `Model ... is not supported` означает проблему выбора model/provider для compression, а не проблему WebSocket или `session.resume`.
 
 ### Принципы проекта
 

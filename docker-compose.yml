@@ -1,6 +1,9 @@
 services:
   n8n:
-    image: n8nio/n8n:2.37.4
+    build:
+      context: .
+      dockerfile: Dockerfile
+
     container_name: n8n-autonomous-agents
     restart: unless-stopped
 
@@ -14,10 +17,9 @@ services:
       - NODE_ENV=production
       - GENERIC_TIMEZONE=Asia/Ho_Chi_Minh
       - TZ=Asia/Ho_Chi_Minh
-
-      # Первый локальный запуск.
-      # После создания owner account эти настройки можно оставить.
       - N8N_SECURE_COOKIE=false
+      - NODES_EXCLUDE=[]
 
     volumes:
       - D:\n8n\data:/home/node/.n8n
+      - D:\n8n\scripts:/home/node/scripts
