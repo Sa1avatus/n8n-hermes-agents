@@ -58,7 +58,7 @@ The workflow therefore behaves more like a small autonomous engineering pipeline
 
 ### Components
 
-#### `AHAWR_v11.json`
+#### `AHAWR_v12.json`
 
 The main orchestration workflow.
 
@@ -78,7 +78,7 @@ Its responsibilities include:
 
 The workflow is intentionally stateful. Task execution state is persisted using n8n Data Tables so that long-running asynchronous Hermes jobs do not have to exist only inside one transient execution.
 
-#### `Hermes_Run_Manager_v4.json`
+#### `Hermes_Run_Manager_v5.json`
 
 A reusable n8n sub-workflow that wraps Hermes Gateway operations.
 
@@ -771,7 +771,7 @@ AHAWR:
 
 То есть n8n здесь выступает именно как **оркестратор**, а Hermes — как execution gateway для AI-run'ов.
 
-### `AHAWR_v11.json`
+### `AHAWR_v12.json`
 
 Это основной workflow проекта.
 
@@ -793,7 +793,7 @@ AHAWR:
 - переход между задачами;
 - финальный результат.
 
-### `Hermes_Run_Manager_v4.json`
+### `Hermes_Run_Manager_v5.json`
 
 Это переиспользуемый sub-workflow для работы с Hermes Gateway.
 
